@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,7 +24,6 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
   const transcribeRef = useRef<any>(null);
   const { toast } = useToast();
 
-  // Initialize the transcription pipeline when component mounts
   useEffect(() => {
     let isMounted = true;
     
@@ -55,18 +53,15 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     };
   }, [toast]);
 
-  // Start recording function
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Set up audio context and analyser for visualizing audio
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       
-      // Create media recorder
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
       
@@ -83,7 +78,6 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
       setIsRecording(true);
       setRecordingTime(0);
       
-      // Start timer
       timerRef.current = window.setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
@@ -98,22 +92,18 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     }
   };
 
-  // Stop recording function
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      // Stop and clear timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
       
-      // Close audio tracks
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       
-      // Clean up audio context
       if (audioContextRef.current) {
         audioContextRef.current.close();
         audioContextRef.current = null;
@@ -122,21 +112,17 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     }
   };
 
-  // Convert blob to audio data
   const blobToAudioData = async (blob: Blob): Promise<AudioBuffer> => {
     const arrayBuffer = await blob.arrayBuffer();
     const audioContext = new AudioContext();
     return await audioContext.decodeAudioData(arrayBuffer);
   };
 
-  // Convert audio buffer to the format expected by the transcriber
   const audioBufferToArray = (audioBuffer: AudioBuffer): Float32Array => {
-    // Get the first channel data (mono)
     const channelData = audioBuffer.getChannelData(0);
     return channelData;
   };
 
-  // Transcribe audio function
   const transcribeAudio = async (audioBlob: Blob) => {
     if (!transcribeRef.current) {
       toast({
@@ -149,16 +135,10 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     
     setIsTranscribing(true);
     try {
-      // Convert blob to audio data
       const audioBuffer = await blobToAudioData(audioBlob);
       const audioData = audioBufferToArray(audioBuffer);
       
-      // Create audio file from blob for the transcriber
-      const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
-      
-      // Transcribe with the whisper model
-      // Note: We're passing the raw file since the transformer library handles audio loading internally
-      const result = await transcribeRef.current(audioFile, {
+      const result = await transcribeRef.current(audioData, {
         sampling_rate: audioBuffer.sampleRate
       });
       
@@ -176,7 +156,7 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Transcription error:", error);
       toast({
         title: "Transcription Failed",
@@ -188,14 +168,12 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     }
   };
 
-  // Format time function
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${mins}:${secs}`;
   };
 
-  // Handle manual input changes
   const handleTranscriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTranscription(e.target.value);
     onTranscriptionComplete(e.target.value);
