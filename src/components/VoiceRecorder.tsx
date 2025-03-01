@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ export const VoiceRecorder = ({
   const timerRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const whisperId = "openai/whisper-tiny.en";
+  const whisperId = "onnx-community/whisper-tiny.en";
   const transcribeRef = useRef<any>(null);
   const { toast } = useToast();
 
@@ -143,19 +142,19 @@ export const VoiceRecorder = ({
     try {
       // Create a URL for the audio blob
       const audioUrl = URL.createObjectURL(audioBlob);
-      
+
       // Transcribe using the URL directly
       const result = await transcribeRef.current(audioUrl);
 
       if (result && result.text) {
         let cleanText = result.text.trim();
-        
+
         // Remove all text within square brackets like [SOUND], [MUSIC], etc.
         cleanText = cleanText.replace(/\[.*?\]/gi, "");
-        
+
         // Remove all text within parentheses
         cleanText = cleanText.replace(/\(.*?\)/gi, "");
-        
+
         // Clean up extra whitespace
         cleanText = cleanText.replace(/\s+/g, " ").trim();
 
