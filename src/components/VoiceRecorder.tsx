@@ -122,6 +122,20 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     }
   };
 
+  // Convert blob to audio data
+  const blobToAudioData = async (blob: Blob): Promise<AudioBuffer> => {
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioContext = new AudioContext();
+    return await audioContext.decodeAudioData(arrayBuffer);
+  };
+
+  // Convert audio buffer to the format expected by the transcriber
+  const audioBufferToArray = (audioBuffer: AudioBuffer): Float32Array => {
+    // Get the first channel data (mono)
+    const channelData = audioBuffer.getChannelData(0);
+    return channelData;
+  };
+
   // Transcribe audio function
   const transcribeAudio = async (audioBlob: Blob) => {
     if (!transcribeRef.current) {
@@ -135,12 +149,18 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     
     setIsTranscribing(true);
     try {
-      // Convert blob to array buffer for processing
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const audioFile = new File([arrayBuffer], "recording.webm", { type: "audio/webm" });
+      // Convert blob to audio data
+      const audioBuffer = await blobToAudioData(audioBlob);
+      const audioData = audioBufferToArray(audioBuffer);
+      
+      // Create audio file from blob for the transcriber
+      const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
       
       // Transcribe with the whisper model
-      const result = await transcribeRef.current(audioFile);
+      // Note: We're passing the raw file since the transformer library handles audio loading internally
+      const result = await transcribeRef.current(audioFile, {
+        sampling_rate: audioBuffer.sampleRate
+      });
       
       if (result && result.text) {
         setTranscription(result.text);
