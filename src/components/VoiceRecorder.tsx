@@ -10,7 +10,9 @@ interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
 }
 
-export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) => {
+export const VoiceRecorder = ({
+  onTranscriptionComplete,
+}: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState("");
@@ -20,38 +22,40 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
   const timerRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const whisperId = "onnx-community/whisper-base.en";
-  const transcribeRef = useRef<any>(null);
+  const whisperId = "onnx-community/whisper-tiny.en";
+  // Using unknown type for the transcriber to avoid complex typing issues
+  const transcribeRef = useRef<unknown>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const initializeTranscriber = async () => {
       try {
         const transcriber = await pipeline(
           "automatic-speech-recognition",
           whisperId,
           {
-            device: "cpu",
-            quantized: false
+            device: "wasm",
           }
         );
         if (isMounted) {
-          transcribeRef.current = transcriber;
+          // Use type assertion to assign the transcriber
+          transcribeRef.current = transcriber as unknown;
         }
       } catch (error) {
         console.error("Error initializing transcriber:", error);
         toast({
           title: "Transcription Error",
-          description: "Could not initialize the transcriber. Please try again later.",
+          description:
+            "Could not initialize the transcriber. Please try again later.",
           variant: "destructive",
         });
       }
     };
 
     initializeTranscriber();
-    
+
     return () => {
       isMounted = false;
     };
@@ -59,42 +63,41 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
-        }
+          autoGainControl: true,
+        },
       });
-      
+
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
-      
+
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=pcm',
-        audioBitsPerSecond: 16000
+        mimeType: "audio/webm;codecs=pcm",
+        audioBitsPerSecond: 16000,
       });
       chunksRef.current = [];
-      
+
       mediaRecorderRef.current.ondataavailable = (e) => {
         chunksRef.current.push(e.data);
       };
-      
+
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         await transcribeAudio(audioBlob);
       };
-      
+
       mediaRecorderRef.current.start();
       setIsRecording(true);
       setRecordingTime(0);
-      
+
       timerRef.current = window.setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
-      
     } catch (error) {
       console.error("Error starting recording:", error);
       toast({
@@ -109,14 +112,16 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      
+
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+
       if (audioContextRef.current) {
         audioContextRef.current.close();
         audioContextRef.current = null;
@@ -140,31 +145,49 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
     if (!transcribeRef.current) {
       toast({
         title: "Transcription Error",
-        description: "Transcriber not initialized. Please refresh and try again.",
+        description:
+          "Transcriber not initialized. Please refresh and try again.",
         variant: "destructive",
       });
       return;
     }
-    
+
     setIsTranscribing(true);
     try {
       const audioBuffer = await blobToAudioData(audioBlob);
       const audioData = audioBufferToArray(audioBuffer);
-      
-      const result = await transcribeRef.current(audioData, {
-        sampling_rate: audioBuffer.sampleRate,
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: false,
-        language: "en"
-      });
-      
+
+      // Define a type for a callable function
+      type CallableFunction = (
+        input: Float32Array,
+        options: {
+          sampling_rate: number;
+          chunk_length_s: number;
+          stride_length_s: number;
+          return_timestamps: boolean;
+        }
+      ) => Promise<{ text: string }>;
+
+      // Use type assertion with a more specific type
+      const result = await (transcribeRef.current as CallableFunction)(
+        audioData,
+        {
+          sampling_rate: audioBuffer.sampleRate,
+          chunk_length_s: 30,
+          stride_length_s: 5,
+          return_timestamps: false,
+        }
+      );
+
       if (result && result.text) {
         let cleanText = result.text.trim();
-        cleanText = cleanText.replace(/\[SOUND\]/g, "");
-        cleanText = cleanText.replace(/\[MUSIC\]/g, "");
+        // Remove all text within square brackets regardless of content
+        cleanText = cleanText.replace(/\[.*?\]/gi, "");
+        // Remove all text within parentheses regardless of content
+        cleanText = cleanText.replace(/\(.*?\)/gi, "");
+        // Clean up extra whitespace
         cleanText = cleanText.replace(/\s+/g, " ").trim();
-        
+
         if (cleanText.length > 0) {
           setTranscription(cleanText);
           onTranscriptionComplete(cleanText);
@@ -175,7 +198,8 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
         } else {
           toast({
             title: "No Speech Detected",
-            description: "The recording contained only background sounds. Please try again.",
+            description:
+              "The recording contained only background sounds. Please try again.",
             variant: "destructive",
           });
         }
@@ -186,7 +210,7 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Transcription error:", error);
       toast({
         title: "Transcription Failed",
@@ -199,12 +223,16 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
+    const mins = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = (seconds % 60).toString().padStart(2, "0");
     return `${mins}:${secs}`;
   };
 
-  const handleTranscriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTranscriptionChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
     setTranscription(e.target.value);
     onTranscriptionComplete(e.target.value);
   };
@@ -215,7 +243,11 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <Button
-              className={`h-16 w-16 rounded-full ${isRecording ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'} ${isRecording ? 'recording-wave' : ''}`}
+              className={`h-16 w-16 rounded-full ${
+                isRecording
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-primary text-primary-foreground"
+              } ${isRecording ? "recording-wave" : ""}`}
               onClick={isRecording ? stopRecording : startRecording}
               disabled={isTranscribing}
             >
@@ -231,7 +263,7 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
               </div>
             )}
           </div>
-          
+
           {isTranscribing && (
             <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -239,7 +271,7 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
             </div>
           )}
         </div>
-        
+
         <Textarea
           className="min-h-[120px] mt-8 resize-none font-medium"
           placeholder="Your transcription will appear here... or you can type directly"
@@ -247,13 +279,11 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
           onChange={handleTranscriptionChange}
           disabled={isRecording || isTranscribing}
         />
-        
+
         <div className="text-xs text-muted-foreground mt-2">
-          {isRecording ? (
-            "Recording... Press the button again to stop."
-          ) : (
-            "Press the microphone button to start recording or type directly."
-          )}
+          {isRecording
+            ? "Recording... Press the button again to stop."
+            : "Press the microphone button to start recording or type directly."}
         </div>
       </CardContent>
     </Card>
