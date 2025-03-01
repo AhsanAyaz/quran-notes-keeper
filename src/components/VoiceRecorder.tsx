@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,9 +23,8 @@ export const VoiceRecorder = ({
   const timerRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const whisperId = "onnx-community/whisper-tiny.en";
-  // Using unknown type for the transcriber to avoid complex typing issues
-  const transcribeRef = useRef<unknown>(null);
+  const whisperId = "openai/whisper-tiny.en";
+  const transcribeRef = useRef<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,8 +40,7 @@ export const VoiceRecorder = ({
           }
         );
         if (isMounted) {
-          // Use type assertion to assign the transcriber
-          transcribeRef.current = transcriber as unknown;
+          transcribeRef.current = transcriber;
         }
       } catch (error) {
         console.error("Error initializing transcriber:", error);
@@ -76,10 +75,8 @@ export const VoiceRecorder = ({
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
 
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=pcm",
-        audioBitsPerSecond: 16000,
-      });
+      // Use a more widely supported format
+      mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (e) => {
@@ -91,7 +88,7 @@ export const VoiceRecorder = ({
         await transcribeAudio(audioBlob);
       };
 
-      mediaRecorderRef.current.start();
+      mediaRecorderRef.current.start(1000); // Collect data every second
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -130,17 +127,6 @@ export const VoiceRecorder = ({
     }
   };
 
-  const blobToAudioData = async (blob: Blob): Promise<AudioBuffer> => {
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioContext = new AudioContext();
-    return await audioContext.decodeAudioData(arrayBuffer);
-  };
-
-  const audioBufferToArray = (audioBuffer: AudioBuffer): Float32Array => {
-    const channelData = audioBuffer.getChannelData(0);
-    return channelData;
-  };
-
   const transcribeAudio = async (audioBlob: Blob) => {
     if (!transcribeRef.current) {
       toast({
@@ -153,38 +139,23 @@ export const VoiceRecorder = ({
     }
 
     setIsTranscribing(true);
+
     try {
-      const audioBuffer = await blobToAudioData(audioBlob);
-      const audioData = audioBufferToArray(audioBuffer);
-
-      // Define a type for a callable function
-      type CallableFunction = (
-        input: Float32Array,
-        options: {
-          sampling_rate: number;
-          chunk_length_s: number;
-          stride_length_s: number;
-          return_timestamps: boolean;
-        }
-      ) => Promise<{ text: string }>;
-
-      // Use type assertion with a more specific type
-      const result = await (transcribeRef.current as CallableFunction)(
-        audioData,
-        {
-          sampling_rate: audioBuffer.sampleRate,
-          chunk_length_s: 30,
-          stride_length_s: 5,
-          return_timestamps: false,
-        }
-      );
+      // Create a URL for the audio blob
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Transcribe using the URL directly
+      const result = await transcribeRef.current(audioUrl);
 
       if (result && result.text) {
         let cleanText = result.text.trim();
-        // Remove all text within square brackets regardless of content
+        
+        // Remove all text within square brackets like [SOUND], [MUSIC], etc.
         cleanText = cleanText.replace(/\[.*?\]/gi, "");
-        // Remove all text within parentheses regardless of content
+        
+        // Remove all text within parentheses
         cleanText = cleanText.replace(/\(.*?\)/gi, "");
+        
         // Clean up extra whitespace
         cleanText = cleanText.replace(/\s+/g, " ").trim();
 
