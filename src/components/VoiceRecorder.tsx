@@ -20,7 +20,7 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
   const timerRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const whisperId = "onnx-community/whisper-tiny.en";
+  const whisperId = "onnx-community/whisper-base.en";
   const transcribeRef = useRef<any>(null);
   const { toast } = useToast();
 
@@ -31,7 +31,11 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
       try {
         const transcriber = await pipeline(
           "automatic-speech-recognition",
-          whisperId
+          whisperId,
+          {
+            device: "cpu",
+            quantized: false
+          }
         );
         if (isMounted) {
           transcribeRef.current = transcriber;
@@ -55,14 +59,23 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
       
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=pcm',
+        audioBitsPerSecond: 16000
+      });
       chunksRef.current = [];
       
       mediaRecorderRef.current.ondataavailable = (e) => {
@@ -139,16 +152,33 @@ export const VoiceRecorder = ({ onTranscriptionComplete }: VoiceRecorderProps) =
       const audioData = audioBufferToArray(audioBuffer);
       
       const result = await transcribeRef.current(audioData, {
-        sampling_rate: audioBuffer.sampleRate
+        sampling_rate: audioBuffer.sampleRate,
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        return_timestamps: false,
+        language: "en"
       });
       
       if (result && result.text) {
-        setTranscription(result.text);
-        onTranscriptionComplete(result.text);
-        toast({
-          title: "Transcription Complete",
-          description: "Your voice note has been transcribed successfully.",
-        });
+        let cleanText = result.text.trim();
+        cleanText = cleanText.replace(/\[SOUND\]/g, "");
+        cleanText = cleanText.replace(/\[MUSIC\]/g, "");
+        cleanText = cleanText.replace(/\s+/g, " ").trim();
+        
+        if (cleanText.length > 0) {
+          setTranscription(cleanText);
+          onTranscriptionComplete(cleanText);
+          toast({
+            title: "Transcription Complete",
+            description: "Your voice note has been transcribed successfully.",
+          });
+        } else {
+          toast({
+            title: "No Speech Detected",
+            description: "The recording contained only background sounds. Please try again.",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Transcription Error",
