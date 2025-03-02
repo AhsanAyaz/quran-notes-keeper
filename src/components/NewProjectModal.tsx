@@ -1,11 +1,22 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 import { Project } from "@/lib/types";
@@ -13,7 +24,6 @@ import { Project } from "@/lib/types";
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProjectCreated: (project: Project) => void;
   userId: string;
 }
 
@@ -26,7 +36,11 @@ const PROJECT_COLORS = [
   "bg-rose-300",
 ];
 
-export const NewProjectModal = ({ isOpen, onClose, onProjectCreated, userId }: NewProjectModalProps) => {
+export const NewProjectModal = ({
+  isOpen,
+  onClose,
+  userId,
+}: NewProjectModalProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(PROJECT_COLORS[0]);
@@ -56,16 +70,15 @@ export const NewProjectModal = ({ isOpen, onClose, onProjectCreated, userId }: N
         updatedAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(projectRef, newProject);
+      await addDoc(projectRef, newProject);
       toast({
         title: "Project created",
         description: `${name} has been created successfully`,
       });
 
       // Type assertion since serverTimestamp() returns FieldValue, not Timestamp
-      onProjectCreated({ id: docRef.id, ...newProject } as Project);
       onClose();
-      
+
       // Reset form
       setName("");
       setDescription("");
@@ -89,7 +102,8 @@ export const NewProjectModal = ({ isOpen, onClose, onProjectCreated, userId }: N
           <DialogHeader>
             <DialogTitle>Create New Reading Pass</DialogTitle>
             <DialogDescription>
-              Start a new Quran reading journey. Give your pass a name and description.
+              Start a new Quran reading journey. Give your pass a name and
+              description.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -127,7 +141,9 @@ export const NewProjectModal = ({ isOpen, onClose, onProjectCreated, userId }: N
                     key={colorClass}
                     type="button"
                     className={`w-8 h-8 rounded-full cursor-pointer transition-all ${
-                      color === colorClass ? "ring-2 ring-primary ring-offset-2" : ""
+                      color === colorClass
+                        ? "ring-2 ring-primary ring-offset-2"
+                        : ""
                     } ${colorClass}`}
                     onClick={() => setColor(colorClass)}
                     disabled={isSubmitting}
@@ -137,7 +153,12 @@ export const NewProjectModal = ({ isOpen, onClose, onProjectCreated, userId }: N
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>

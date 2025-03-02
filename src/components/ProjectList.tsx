@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   collection,
@@ -89,10 +88,6 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
     navigate(`/project/${projectId}`);
   };
 
-  const handleAddProject = (newProject: Project) => {
-    setProjects((prev) => [newProject, ...prev]);
-  };
-
   const handleDeleteClick = (e: React.MouseEvent, project: Project) => {
     e.stopPropagation();
     setProjectToDelete(project);
@@ -100,33 +95,33 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
 
   const handleConfirmDelete = async () => {
     if (!projectToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const batch = writeBatch(db);
-      
+
       // Delete all notes associated with this project - fixed: get all docs first
       const notesQuery = query(
         collection(db, "notes"),
         where("projectId", "==", projectToDelete.id)
       );
-      
+
       // Get all notes matching the query
       const notesSnapshot = await getDocs(notesQuery);
-      
+
       // Add delete operations to batch
       notesSnapshot.docs.forEach((noteDoc) => {
         batch.delete(doc(db, "notes", noteDoc.id));
       });
-      
+
       // Delete the project itself
       batch.delete(doc(db, "projects", projectToDelete.id));
-      
+
       // Commit the batch
       await batch.commit();
-      
-      setProjects((prev) => prev.filter(p => p.id !== projectToDelete.id));
-      
+
+      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id));
+
       toast({
         title: "Reading Pass Deleted",
         description: `"${projectToDelete.name}" and all associated notes have been deleted`,
@@ -213,9 +208,12 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
               <CardContent className="pt-4">
                 <div className="text-sm text-muted-foreground">
                   Created{" "}
-                  {formatDistanceToNow(project.createdAt.toDate(), {
-                    addSuffix: true,
-                  })}
+                  {formatDistanceToNow(
+                    project.createdAt?.toDate() || Date.now(),
+                    {
+                      addSuffix: true,
+                    }
+                  )}
                 </div>
               </CardContent>
               <CardFooter>
@@ -235,29 +233,33 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
       <NewProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onProjectCreated={handleAddProject}
         userId={userId}
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+      <Dialog
+        open={!!projectToDelete}
+        onOpenChange={(open) => !open && setProjectToDelete(null)}
+      >
         <DialogContent className="glass-card animate-fade-in">
           <DialogHeader>
             <DialogTitle>Delete Reading Pass</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{projectToDelete?.name}"? This will permanently remove this reading pass and ALL notes associated with it. This action cannot be undone.
+              Are you sure you want to delete "{projectToDelete?.name}"? This
+              will permanently remove this reading pass and ALL notes associated
+              with it. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setProjectToDelete(null)}
               disabled={isDeleting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
