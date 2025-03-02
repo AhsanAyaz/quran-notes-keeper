@@ -1,10 +1,16 @@
-
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { FirebaseError } from "firebase/app";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VoiceRecorder from "./VoiceRecorder";
@@ -21,6 +27,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
   const [surah, setSurah] = useState<number | string>("");
   const [verse, setVerse] = useState<number | string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTranscriberReady, setIsTranscriberReady] = useState(false);
   const { toast } = useToast();
 
   // Extract Surah and verse information when transcription changes
@@ -38,7 +45,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!transcription.trim()) {
       toast({
         title: "Note Required",
@@ -71,24 +78,25 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
       };
 
       await addDoc(collection(db, "notes"), noteData);
-      
+
       toast({
         title: "Note Saved",
         description: `Note for Surah ${surah}:${verse} has been saved`,
       });
-      
+
       // Reset form
       setTranscription("");
       setSurah("");
       setVerse("");
-      
+
       // Notify parent component
       onNoteAdded();
-    } catch (error: any) {
+    } catch (error) {
+      const firebaseError = error as FirebaseError;
       console.error("Error saving note:", error);
       toast({
         title: "Failed to save note",
-        description: error.message,
+        description: firebaseError.message,
         variant: "destructive",
       });
     } finally {
@@ -103,8 +111,10 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
           <CardTitle>Add New Note</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <VoiceRecorder onTranscriptionComplete={handleTranscriptionComplete} />
-          
+          <VoiceRecorder
+            onTranscriptionComplete={handleTranscriptionComplete}
+          />
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="surah">Surah (Chapter)</Label>
@@ -134,11 +144,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Save Note"}
           </Button>
         </CardFooter>

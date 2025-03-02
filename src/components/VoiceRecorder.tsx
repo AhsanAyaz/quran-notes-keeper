@@ -3,17 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, Square, Loader2 } from "lucide-react";
-import { pipeline } from "@huggingface/transformers";
+import {
+  pipeline,
+  AutomaticSpeechRecognitionPipeline,
+} from "@huggingface/transformers";
 import { useToast } from "@/components/ui/use-toast";
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
+  onTranscriberStatus?: (isReady: boolean) => void;
 }
 
 export const VoiceRecorder = ({
   onTranscriptionComplete,
+  onTranscriberStatus,
 }: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
+  const [transcriptionEnabled, setTranscriptionEnabled] = useState<
+    boolean | null
+  >(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState("");
   const [recordingTime, setRecordingTime] = useState(0);
@@ -23,7 +31,7 @@ export const VoiceRecorder = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const whisperId = "onnx-community/whisper-tiny.en";
-  const transcribeRef = useRef<ReturnType<typeof pipeline> | null>(null);
+  const transcribeRef = useRef<AutomaticSpeechRecognitionPipeline | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,24 +39,32 @@ export const VoiceRecorder = ({
 
     const initializeTranscriber = async () => {
       try {
-        const transcriber = await pipeline(
-          "automatic-speech-recognition",
-          whisperId,
-          {
-            device: "wasm",
-          }
-        );
         if (isMounted) {
-          transcribeRef.current = transcriber;
+          const pipe = await pipeline(
+            "automatic-speech-recognition",
+            whisperId,
+            {
+              device: "wasm",
+            }
+          );
+          transcribeRef.current = pipe;
+          onTranscriberStatus?.(true);
+          setTranscriptionEnabled(true);
         }
       } catch (error) {
         console.error("Error initializing transcriber:", error);
-        toast({
-          title: "Transcription Error",
-          description:
-            "Could not initialize the transcriber. Please try again later.",
-          variant: "destructive",
-        });
+        onTranscriberStatus?.(false);
+        setTranscriptionEnabled(false);
+        // Only show error if we haven't shown it before on this device
+        if (!localStorage.getItem("transcriberErrorShown")) {
+          toast({
+            title: "Transcription Error",
+            description:
+              "Could not initialize the transcriber. Please try again later.",
+            variant: "destructive",
+          });
+          localStorage.setItem("transcriberErrorShown", "true");
+        }
       }
     };
 
@@ -181,9 +197,10 @@ export const VoiceRecorder = ({
 
       // Transcribe using the URL directly
       const result = await transcribeRef.current(audioUrl);
+      const text = Array.isArray(result) ? result[0]?.text : result?.text;
 
-      if (result && result.text) {
-        let cleanText = result.text.trim();
+      if (text) {
+        let cleanText = text.trim();
 
         // Remove all text within square brackets like [SOUND], [MUSIC], etc.
         cleanText = cleanText.replace(/\[.*?\]/gi, "");
@@ -246,51 +263,64 @@ export const VoiceRecorder = ({
   return (
     <Card className="w-full animate-fade-in glass-card">
       <CardContent className="p-6 space-y-4">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <Button
-              className={`h-16 w-16 rounded-full ${
-                isRecording
-                  ? "bg-destructive text-destructive-foreground"
-                  : "bg-primary text-primary-foreground"
-              } ${isRecording ? "recording-wave" : ""}`}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isTranscribing}
-            >
-              {isRecording ? (
-                <Square className="h-6 w-6" />
-              ) : (
-                <Mic className="h-6 w-6" />
+        {transcriptionEnabled ? (
+          <div className="flex flex-col items-center gap-4 mb-8 ">
+            <div className="relative">
+              <Button
+                type="button"
+                className={`h-16 w-16 rounded-full ${
+                  isRecording
+                    ? "bg-destructive text-destructive-foreground"
+                    : "bg-primary text-primary-foreground"
+                } ${isRecording ? "recording-wave" : ""}`}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isTranscribing}
+              >
+                {isRecording ? (
+                  <Square className="h-6 w-6" />
+                ) : (
+                  <Mic className="h-6 w-6" />
+                )}
+              </Button>
+              {isRecording && (
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm font-medium">
+                  {formatTime(recordingTime)}
+                </div>
               )}
-            </Button>
-            {isRecording && (
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm font-medium">
-                {formatTime(recordingTime)}
+            </div>
+
+            {isTranscribing && (
+              <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Transcribing...</span>
               </div>
             )}
           </div>
-
-          {isTranscribing && (
-            <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Transcribing...</span>
-            </div>
-          )}
-        </div>
+        ) : transcriptionEnabled === null ? (
+          <div className="text-center mb-8 ">
+            <Loader2 className="h-4 w-4 animate-spin mx-auto max-w-fit" />
+          </div>
+        ) : null}
 
         <Textarea
-          className="min-h-[120px] mt-8 resize-none font-medium"
-          placeholder="Your transcription will appear here... or you can type directly"
+          className="min-h-[120px] resize-none font-medium"
+          placeholder={
+            transcriptionEnabled
+              ? `Your transcription will appear here... or you can type directly`
+              : `Type your notes here...`
+          }
           value={transcription}
           onChange={handleTranscriptionChange}
           disabled={isRecording || isTranscribing}
         />
 
-        <div className="text-xs text-muted-foreground mt-2">
-          {isRecording
-            ? "Recording... Press the button again to stop."
-            : "Press the microphone button to start recording or type directly."}
-        </div>
+        {transcriptionEnabled && (
+          <div className="text-xs text-muted-foreground mt-2">
+            {isRecording
+              ? "Recording... Press the button again to stop."
+              : "Press the microphone button to start recording or type directly."}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
