@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   collection,
@@ -5,6 +6,9 @@ import {
   where,
   orderBy,
   onSnapshot,
+  doc,
+  deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Project } from "@/lib/types";
@@ -17,11 +21,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, BookOpen, Loader2 } from "lucide-react";
+import { PlusCircle, BookOpen, Loader2, Trash } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import NewProjectModal from "./NewProjectModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ProjectListProps {
   userId: string;
@@ -31,6 +43,8 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -76,6 +90,54 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
 
   const handleAddProject = (newProject: Project) => {
     setProjects((prev) => [newProject, ...prev]);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    setProjectToDelete(project);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const batch = writeBatch(db);
+      
+      // Delete all notes associated with this project
+      const notesQuery = query(
+        collection(db, "notes"),
+        where("projectId", "==", projectToDelete.id)
+      );
+      
+      const notesSnapshot = await onSnapshot(notesQuery, () => {});
+      notesSnapshot.docs.forEach((noteDoc) => {
+        batch.delete(doc(db, "notes", noteDoc.id));
+      });
+      
+      // Delete the project itself
+      batch.delete(doc(db, "projects", projectToDelete.id));
+      
+      // Commit the batch
+      await batch.commit();
+      
+      setProjects((prev) => prev.filter(p => p.id !== projectToDelete.id));
+      
+      toast({
+        title: "Reading Pass Deleted",
+        description: `"${projectToDelete.name}" and all associated notes have been deleted`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      toast({
+        title: "Failed to delete reading pass",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setProjectToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -129,7 +191,17 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
               <CardHeader
                 className={`${project.color || "bg-sand-300"} rounded-t-lg`}
               >
-                <CardTitle className="truncate h-8">{project.name}</CardTitle>
+                <div className="flex justify-between items-start">
+                  <CardTitle className="truncate h-8">{project.name}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <Trash className="h-4 w-4 text-foreground" />
+                  </Button>
+                </div>
                 <CardDescription className="text-foreground truncate">
                   {project.description || "No description"}
                 </CardDescription>
@@ -162,6 +234,34 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
         onProjectCreated={handleAddProject}
         userId={userId}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <DialogContent className="glass-card animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Delete Reading Pass</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{projectToDelete?.name}"? This will permanently remove this reading pass and ALL notes associated with it. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setProjectToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Reading Pass"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

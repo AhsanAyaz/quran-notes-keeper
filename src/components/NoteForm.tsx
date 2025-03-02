@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -7,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -115,6 +117,18 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
           <VoiceRecorder
             onTranscriptionComplete={handleTranscriptionComplete}
           />
+
+          <div className="space-y-2">
+            <Label htmlFor="note">Your Note</Label>
+            <Textarea
+              id="note"
+              placeholder="Type your note here or use the voice recorder above..."
+              value={transcription}
+              onChange={(e) => setTranscription(e.target.value)}
+              className="min-h-[100px] resize-y"
+              disabled={isSubmitting}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
