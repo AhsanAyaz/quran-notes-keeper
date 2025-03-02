@@ -14,7 +14,7 @@ import { FirebaseError } from "firebase/app";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VoiceRecorder from "./VoiceRecorder";
-import { extractSurahVerse } from "@/lib/utils";
+import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
 
 interface NoteFormProps {
   projectId: string;
@@ -27,6 +27,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
   const [surah, setSurah] = useState<number | string>("");
   const [verse, setVerse] = useState<number | string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [maxVerse, setMaxVerse] = useState<number>(0);
   const [isTranscriberReady, setIsTranscriberReady] = useState(false);
   const { toast } = useToast();
 
@@ -124,7 +125,10 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
                 min="1"
                 max="114"
                 value={surah}
-                onChange={(e) => setSurah(e.target.value)}
+                onChange={(e) => {
+                  setSurah(e.target.value);
+                  setMaxVerse(getMaxVerseNumber(parseInt(e.target.value)));
+                }}
                 placeholder="1-114"
                 disabled={isSubmitting}
               />
@@ -136,9 +140,10 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
                 type="number"
                 min="1"
                 value={verse}
+                max={maxVerse}
                 onChange={(e) => setVerse(e.target.value)}
                 placeholder="Verse number"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !surah}
               />
             </div>
           </div>

@@ -402,7 +402,7 @@ export const VoiceRecorder = ({
         )}
 
         <Textarea
-          className="min-h-[120px] resize-none font-medium"
+          className="min-h-[120px] resize-none! font-medium"
           placeholder={
             transcriptionEnabled
               ? `Your transcription will appear here... or you can type directly`
@@ -411,6 +411,7 @@ export const VoiceRecorder = ({
           value={transcription}
           onChange={handleTranscriptionChange}
           disabled={isRecording || isTranscribing}
+          rows={3}
         />
 
         {transcriptionEnabled ? (

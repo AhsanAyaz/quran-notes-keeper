@@ -1,9 +1,21 @@
-
 import { useState, useEffect } from "react";
-import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Project } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, BookOpen, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -34,10 +46,13 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
     const unsubscribe = onSnapshot(
       projectsQuery,
       (snapshot) => {
-        const projectList: Project[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Project));
+        const projectList: Project[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as Project)
+        );
         setProjects(projectList);
         setIsLoading(false);
       },
@@ -98,7 +113,9 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
                 Create your first Quran reading pass to start taking notes
               </p>
             </div>
-            <Button onClick={() => setIsModalOpen(true)}>Create Reading Pass</Button>
+            <Button onClick={() => setIsModalOpen(true)}>
+              Create Reading Pass
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -109,19 +126,28 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
               className="cursor-pointer hover:ring-1 hover:ring-primary/20 transition-all glass-card animate-fade-in"
               onClick={() => handleProjectClick(project.id)}
             >
-              <CardHeader className={`${project.color || 'bg-sand-300'} rounded-t-lg`}>
-                <CardTitle className="truncate">{project.name}</CardTitle>
-                <CardDescription className="text-primary-foreground/80 truncate">
+              <CardHeader
+                className={`${project.color || "bg-sand-300"} rounded-t-lg`}
+              >
+                <CardTitle className="truncate h-8">{project.name}</CardTitle>
+                <CardDescription className="text-foreground truncate">
                   {project.description || "No description"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="text-sm text-muted-foreground">
-                  Created {formatDistanceToNow(project.createdAt.toDate(), { addSuffix: true })}
+                  Created{" "}
+                  {formatDistanceToNow(project.createdAt.toDate(), {
+                    addSuffix: true,
+                  })}
                 </div>
               </CardContent>
               <CardFooter>
-                <Button variant="ghost" className="w-full" onClick={() => handleProjectClick(project.id)}>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => handleProjectClick(project.id)}
+                >
                   Open
                 </Button>
               </CardFooter>
