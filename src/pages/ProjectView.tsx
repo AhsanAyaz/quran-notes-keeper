@@ -1,16 +1,32 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { 
+  doc, 
+  getDoc, 
+  writeBatch, 
+  collection, 
+  query, 
+  where, 
+  getDocs
+} from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { Project } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash } from "lucide-react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import { User } from "firebase/auth";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ProjectView = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -18,6 +34,8 @@ const ProjectView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -82,6 +100,53 @@ const ProjectView = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleDeleteProject = async () => {
+    if (!projectId || !project) return;
+    
+    setIsDeleting(true);
+    try {
+      const batch = writeBatch(db);
+      
+      // Delete all notes associated with this project
+      const notesQuery = query(
+        collection(db, "notes"),
+        where("projectId", "==", projectId)
+      );
+      
+      // Get all notes matching the query
+      const notesSnapshot = await getDocs(notesQuery);
+      
+      // Add delete operations to batch
+      notesSnapshot.docs.forEach((noteDoc) => {
+        batch.delete(doc(db, "notes", noteDoc.id));
+      });
+      
+      // Delete the project itself
+      batch.delete(doc(db, "projects", projectId));
+      
+      // Commit the batch
+      await batch.commit();
+      
+      toast({
+        title: "Reading Pass Deleted",
+        description: `"${project.name}" and all associated notes have been deleted`,
+      });
+      
+      // Navigate to dashboard after deletion
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      toast({
+        title: "Failed to delete reading pass",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -98,15 +163,26 @@ const ProjectView = () => {
     <div className="min-h-screen">
       <header className={`py-4 ${project.color || 'bg-sand-300'}`}>
         <div className="container mx-auto px-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mb-4 bg-white/80"
-            onClick={() => navigate("/dashboard")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Dashboard
-          </Button>
+          <div className="flex justify-between items-center mb-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white/80"
+              onClick={() => navigate("/dashboard")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Dashboard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash className="h-4 w-4 mr-1" />
+              Delete Pass
+            </Button>
+          </div>
           <h1 className="text-3xl font-serif font-bold text-primary-foreground">{project.name}</h1>
           {project.description && (
             <p className="text-primary-foreground/80 mt-1">{project.description}</p>
@@ -138,6 +214,34 @@ const ProjectView = () => {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="glass-card animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Delete Reading Pass</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{project.name}"? This will permanently remove this reading pass and ALL notes associated with it. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Reading Pass"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

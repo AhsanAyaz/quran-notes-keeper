@@ -9,6 +9,7 @@ import {
   doc,
   deleteDoc,
   writeBatch,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Project } from "@/lib/types";
@@ -104,13 +105,16 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
     try {
       const batch = writeBatch(db);
       
-      // Delete all notes associated with this project
+      // Delete all notes associated with this project - fixed: get all docs first
       const notesQuery = query(
         collection(db, "notes"),
         where("projectId", "==", projectToDelete.id)
       );
       
-      const notesSnapshot = await onSnapshot(notesQuery, () => {});
+      // Get all notes matching the query
+      const notesSnapshot = await getDocs(notesQuery);
+      
+      // Add delete operations to batch
       notesSnapshot.docs.forEach((noteDoc) => {
         batch.delete(doc(db, "notes", noteDoc.id));
       });
