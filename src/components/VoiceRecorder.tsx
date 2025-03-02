@@ -23,7 +23,7 @@ export const VoiceRecorder = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const whisperId = "onnx-community/whisper-tiny.en";
-  const transcribeRef = useRef<any>(null);
+  const transcribeRef = useRef<ReturnType<typeof pipeline> | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,29 +61,64 @@ export const VoiceRecorder = ({
 
   const startRecording = async () => {
     try {
+      // iOS requires specific audio constraints
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          sampleRate: 44100,
+          channelCount: 1,
         },
       });
 
-      audioContextRef.current = new AudioContext();
+      // iOS requires user interaction before creating AudioContext
+      if (!audioContextRef.current) {
+        // Safari/WebKit support
+        const AudioContextClass =
+          window.AudioContext ||
+          (window["webkitAudioContext"] as { new (): AudioContext });
+        audioContextRef.current = new AudioContextClass();
+      }
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
 
-      // Use a more widely supported format
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Configure MediaRecorder with iOS-compatible settings
+      let options = {};
+
+      // Try different formats in order of preference
+      const mimeTypes = [
+        "audio/mp4",
+        "audio/mp4a-latm",
+        "audio/webm",
+        "audio/ogg",
+        "audio/wav",
+      ];
+
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          options = {
+            mimeType,
+            audioBitsPerSecond: 128000,
+          };
+          break;
+        }
+      }
+
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (e) => {
-        chunksRef.current.push(e.data);
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+        // Use the mime type that was actually selected
+        const mimeType = mediaRecorderRef.current?.mimeType || "audio/webm";
+        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
         await transcribeAudio(audioBlob);
       };
 
@@ -98,7 +133,8 @@ export const VoiceRecorder = ({
       console.error("Error starting recording:", error);
       toast({
         title: "Recording Error",
-        description: "Could not access microphone. Please check permissions.",
+        description:
+          "Could not access microphone. Please check permissions and ensure you're using a supported browser.",
         variant: "destructive",
       });
     }
