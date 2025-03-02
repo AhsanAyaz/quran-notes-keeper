@@ -28,11 +28,11 @@ export const VoiceRecorder = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const whisperId = "onnx-community/whisper-tiny.en";
+
   const transcribeRef = useRef<AutomaticSpeechRecognitionPipeline | null>(null);
   const { toast } = useToast();
+  const [isFallbackMode, setIsFallbackMode] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,30 +40,64 @@ export const VoiceRecorder = ({
     const initializeTranscriber = async () => {
       try {
         if (isMounted) {
+          // Check if we're on iOS
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+          // Try initializing with appropriate settings
           const pipe = await pipeline(
             "automatic-speech-recognition",
             whisperId,
             {
               device: "wasm",
+              // Don't use quantized on iOS as it might not be supported well
+              ...(isIOS ? {} : { quantized: true }),
             }
           );
+
           transcribeRef.current = pipe;
           onTranscriberStatus?.(true);
           setTranscriptionEnabled(true);
+          console.log("Transcriber initialized successfully");
         }
       } catch (error) {
         console.error("Error initializing transcriber:", error);
-        onTranscriberStatus?.(false);
-        setTranscriptionEnabled(false);
-        // Only show error if we haven't shown it before on this device
-        if (!localStorage.getItem("transcriberErrorShown")) {
-          toast({
-            title: "Transcription Error",
-            description:
-              "Could not initialize the transcriber. Please try again later.",
-            variant: "destructive",
-          });
-          localStorage.setItem("transcriberErrorShown", "true");
+
+        // Try fallback mode for iOS
+        try {
+          if (isMounted && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            console.log("Trying fallback initialization for iOS...");
+            const pipe = await pipeline(
+              "automatic-speech-recognition",
+              whisperId,
+              {
+                device: "wasm",
+                // No additional options for iOS fallback
+              }
+            );
+            transcribeRef.current = pipe;
+            onTranscriberStatus?.(true);
+            setTranscriptionEnabled(true);
+            setIsFallbackMode(true);
+            console.log("Transcriber initialized in fallback mode");
+          } else {
+            onTranscriberStatus?.(false);
+            setTranscriptionEnabled(false);
+          }
+        } catch (fallbackError) {
+          console.error("Fallback initialization also failed:", fallbackError);
+          onTranscriberStatus?.(false);
+          setTranscriptionEnabled(false);
+
+          // Only show error if we haven't shown it before on this device
+          if (!localStorage.getItem("transcriberErrorShown")) {
+            toast({
+              title: "Transcription Error",
+              description:
+                "Could not initialize the transcriber. Manual note entry is still available.",
+              variant: "destructive",
+            });
+            localStorage.setItem("transcriberErrorShown", "true");
+          }
         }
       }
     };
@@ -73,71 +107,91 @@ export const VoiceRecorder = ({
     return () => {
       isMounted = false;
     };
-  }, [toast]);
+  }, [toast, onTranscriberStatus]);
 
   const startRecording = async () => {
     try {
-      // iOS requires specific audio constraints
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // Clear any previous transcription
+      setTranscription("");
+
+      // iOS-optimized audio constraints
+      const constraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 44100,
-          channelCount: 1,
         },
-      });
+      };
 
-      // iOS requires user interaction before creating AudioContext
-      if (!audioContextRef.current) {
-        // Safari/WebKit support
-        const AudioContextClass =
-          window.AudioContext ||
-          (window["webkitAudioContext"] as { new (): AudioContext });
-        audioContextRef.current = new AudioContextClass();
-      }
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
+      console.log("Requesting audio stream with constraints:", constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("Stream obtained:", stream);
 
-      // Configure MediaRecorder with iOS-compatible settings
-      let options = {};
-
-      // Try different formats in order of preference
-      const mimeTypes = [
-        "audio/mp4",
-        "audio/mp4a-latm",
+      // Find the best supported MIME type for this browser
+      let mimeType = "";
+      const types = [
         "audio/webm",
-        "audio/ogg",
-        "audio/wav",
+        "audio/mp4",
+        "audio/ogg;codecs=opus",
+        "audio/webm;codecs=opus",
       ];
 
-      for (const mimeType of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mimeType)) {
-          options = {
-            mimeType,
-            audioBitsPerSecond: 128000,
-          };
+      for (const type of types) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          console.log(`Selected MIME type: ${mimeType}`);
           break;
         }
       }
+
+      // If no supported types are found, try without specifying mime type
+      const options = mimeType ? { mimeType } : {};
+      console.log("Creating MediaRecorder with options:", options);
 
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
+          console.log(`Received data chunk: ${e.data.size} bytes`);
           chunksRef.current.push(e.data);
         }
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        // Use the mime type that was actually selected
-        const mimeType = mediaRecorderRef.current?.mimeType || "audio/webm";
-        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+        console.log("MediaRecorder stopped, processing audio...");
+        // Get all recorded chunks
+        const chunks = chunksRef.current;
+
+        if (chunks.length === 0) {
+          console.error("No audio data collected");
+          toast({
+            title: "Recording Error",
+            description: "No audio data was captured. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Create blob from all chunks
+        const audioBlob = new Blob(chunks, { type: mimeType || "audio/webm" });
+        console.log(`Created audio blob: ${audioBlob.size} bytes`);
+
+        if (audioBlob.size < 100) {
+          console.error("Audio blob too small, likely no audio captured");
+          toast({
+            title: "Recording Error",
+            description:
+              "Recording was too quiet or too short. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         await transcribeAudio(audioBlob);
       };
 
+      console.log("Starting MediaRecorder...");
       mediaRecorderRef.current.start(1000); // Collect data every second
       setIsRecording(true);
       setRecordingTime(0);
@@ -145,6 +199,8 @@ export const VoiceRecorder = ({
       timerRef.current = window.setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
+
+      console.log("Recording started successfully");
     } catch (error) {
       console.error("Error starting recording:", error);
       toast({
@@ -158,7 +214,15 @@ export const VoiceRecorder = ({
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      console.log("Stopping recording...");
+
+      // Sometimes stop() can throw an error if the recorder is in an invalid state
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.error("Error stopping MediaRecorder:", e);
+      }
+
       setIsRecording(false);
 
       if (timerRef.current) {
@@ -166,15 +230,19 @@ export const VoiceRecorder = ({
         timerRef.current = null;
       }
 
-      mediaRecorderRef.current.stream
-        .getTracks()
-        .forEach((track) => track.stop());
-
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-        analyserRef.current = null;
+      // Stop all tracks in the stream
+      try {
+        if (mediaRecorderRef.current.stream) {
+          mediaRecorderRef.current.stream.getTracks().forEach((track) => {
+            console.log(`Stopping track: ${track.kind}`);
+            track.stop();
+          });
+        }
+      } catch (e) {
+        console.error("Error stopping tracks:", e);
       }
+
+      console.log("Recording stopped");
     }
   };
 
@@ -190,16 +258,30 @@ export const VoiceRecorder = ({
     }
 
     setIsTranscribing(true);
+    console.log("Starting transcription...");
 
     try {
       // Create a URL for the audio blob
       const audioUrl = URL.createObjectURL(audioBlob);
+      console.log("Created audio URL:", audioUrl);
 
-      // Transcribe using the URL directly
-      const result = await transcribeRef.current(audioUrl);
+      // Special handling for iOS fallback mode if needed
+      let result;
+      if (isFallbackMode) {
+        console.log("Using fallback transcription mode");
+        // In fallback mode, we might need different processing
+        result = await transcribeRef.current(audioUrl);
+      } else {
+        // Standard processing
+        result = await transcribeRef.current(audioUrl);
+      }
+
+      console.log("Transcription result:", result);
+
       const text = Array.isArray(result) ? result[0]?.text : result?.text;
 
       if (text) {
+        console.log("Raw transcription:", text);
         let cleanText = text.trim();
 
         // Remove all text within square brackets like [SOUND], [MUSIC], etc.
@@ -210,6 +292,8 @@ export const VoiceRecorder = ({
 
         // Clean up extra whitespace
         cleanText = cleanText.replace(/\s+/g, " ").trim();
+
+        console.log("Cleaned transcription:", cleanText);
 
         if (cleanText.length > 0) {
           setTranscription(cleanText);
@@ -233,15 +317,20 @@ export const VoiceRecorder = ({
           variant: "destructive",
         });
       }
+
+      // Clean up the audio URL
+      URL.revokeObjectURL(audioUrl);
     } catch (error: unknown) {
       console.error("Transcription error:", error);
       toast({
         title: "Transcription Failed",
-        description: "Could not transcribe audio. Please try again.",
+        description:
+          "Could not transcribe audio. You can still type your note manually.",
         variant: "destructive",
       });
     } finally {
       setIsTranscribing(false);
+      console.log("Transcription process complete");
     }
   };
 
@@ -299,8 +388,18 @@ export const VoiceRecorder = ({
         ) : transcriptionEnabled === null ? (
           <div className="text-center mb-8 ">
             <Loader2 className="h-4 w-4 animate-spin mx-auto max-w-fit" />
+            <p className="text-sm text-muted-foreground mt-2">
+              Initializing speech transcription...
+            </p>
           </div>
-        ) : null}
+        ) : (
+          <div className="text-center mb-8">
+            <p className="text-sm text-muted-foreground">
+              Speech transcription not available. Please type your notes
+              directly.
+            </p>
+          </div>
+        )}
 
         <Textarea
           className="min-h-[120px] resize-none font-medium"
@@ -314,11 +413,15 @@ export const VoiceRecorder = ({
           disabled={isRecording || isTranscribing}
         />
 
-        {transcriptionEnabled && (
+        {transcriptionEnabled ? (
           <div className="text-xs text-muted-foreground mt-2">
             {isRecording
               ? "Recording... Press the button again to stop."
               : "Press the microphone button to start recording or type directly."}
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground mt-2">
+            Type your notes directly in the box above.
           </div>
         )}
       </CardContent>
