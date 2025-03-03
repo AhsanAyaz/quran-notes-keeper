@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Card,
@@ -29,12 +28,11 @@ import NoteForm from "./NoteForm";
 interface NoteProps {
   note: QuranNote;
   onDelete: (id: string) => void;
-  onUpdate: () => void;
   projectId: string;
   userId: string;
 }
 
-export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps) => {
+export const Note = ({ note, onDelete, projectId, userId }: NoteProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isVerseDialogOpen, setIsVerseDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -99,7 +97,6 @@ export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps)
 
   const handleNoteUpdated = () => {
     setIsEditMode(false);
-    onUpdate();
   };
 
   if (isEditMode) {
