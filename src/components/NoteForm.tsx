@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -12,18 +13,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { FirebaseError } from "firebase/app";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VoiceRecorder from "./VoiceRecorder";
 import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
+import { QuranNote } from "@/lib/types";
 
 interface NoteFormProps {
   projectId: string;
   userId: string;
   onNoteAdded: () => void;
+  noteToEdit?: QuranNote | null;
+  onCancelEdit?: () => void;
 }
 
-export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
+export const NoteForm = ({ 
+  projectId, 
+  userId, 
+  onNoteAdded, 
+  noteToEdit = null,
+  onCancelEdit
+}: NoteFormProps) => {
   const [transcription, setTranscription] = useState("");
   const [surah, setSurah] = useState<number | string>("");
   const [verse, setVerse] = useState<number | string>("");
@@ -33,18 +43,35 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
     null
   );
   const { toast } = useToast();
+  const isEditMode = Boolean(noteToEdit);
+
+  // Initialize form with note data if in edit mode
+  useEffect(() => {
+    if (noteToEdit) {
+      setTranscription(noteToEdit.text);
+      setSurah(noteToEdit.surah);
+      setVerse(noteToEdit.verse);
+      setMaxVerse(getMaxVerseNumber(noteToEdit.surah));
+    }
+  }, [noteToEdit]);
 
   // Extract Surah and verse information when transcription changes
   useEffect(() => {
-    if (transcription) {
+    if (transcription && !isEditMode) {
       const { surah, verse } = extractSurahVerse(transcription);
       if (surah) setSurah(surah);
       if (verse) setVerse(verse);
     }
-  }, [transcription]);
+  }, [transcription, isEditMode]);
 
   const handleTranscriptionComplete = (text: string) => {
     setTranscription(text);
+  };
+
+  const resetForm = () => {
+    setTranscription("");
+    setSurah("");
+    setVerse("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,27 +98,44 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const noteData = {
-        surah: Number(surah),
-        verse: Number(verse),
-        text: transcription.trim(),
-        projectId,
-        userId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      if (isEditMode && noteToEdit) {
+        // Update existing note
+        const noteRef = doc(db, "notes", noteToEdit.id);
+        await updateDoc(noteRef, {
+          surah: Number(surah),
+          verse: Number(verse),
+          text: transcription.trim(),
+          updatedAt: serverTimestamp(),
+        });
 
-      await addDoc(collection(db, "notes"), noteData);
+        toast({
+          title: "Note Updated",
+          description: `Note for Surah ${surah}:${verse} has been updated`,
+        });
+        
+        if (onCancelEdit) onCancelEdit();
+      } else {
+        // Create new note
+        const noteData = {
+          surah: Number(surah),
+          verse: Number(verse),
+          text: transcription.trim(),
+          projectId,
+          userId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
 
-      toast({
-        title: "Note Saved",
-        description: `Note for Surah ${surah}:${verse} has been saved`,
-      });
+        await addDoc(collection(db, "notes"), noteData);
 
-      // Reset form
-      setTranscription("");
-      setSurah("");
-      setVerse("");
+        toast({
+          title: "Note Saved",
+          description: `Note for Surah ${surah}:${verse} has been saved`,
+        });
+
+        // Reset form only for new notes
+        resetForm();
+      }
 
       // Notify parent component
       onNoteAdded();
@@ -99,7 +143,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
       const firebaseError = error as FirebaseError;
       console.error("Error saving note:", error);
       toast({
-        title: "Failed to save note",
+        title: isEditMode ? "Failed to update note" : "Failed to save note",
         description: firebaseError.message,
         variant: "destructive",
       });
@@ -108,12 +152,20 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
     }
   };
 
+  const handleCancel = () => {
+    if (onCancelEdit) {
+      onCancelEdit();
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <Card className="glass-card animate-fade-in">
-        <CardHeader>{/* <CardTitle>New Note</CardTitle> */}</CardHeader>
+        <CardHeader>
+          <CardTitle>{isEditMode ? "Edit Note" : "New Note"}</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-6">
-          {isTranscriberReady !== false && (
+          {!isEditMode && isTranscriberReady !== false && (
             <VoiceRecorder
               onTranscriptionComplete={handleTranscriptionComplete}
               onTranscriberStatus={(status) => {
@@ -127,7 +179,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
             <Textarea
               id="note"
               placeholder={`Type your note here${
-                isTranscriberReady ? " or use the voice recorder above" : ""
+                !isEditMode && isTranscriberReady ? " or use the voice recorder above" : ""
               }...`}
               value={transcription}
               onChange={(e) => setTranscription(e.target.value)}
@@ -168,9 +220,22 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex gap-2">
+          {isEditMode && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+          )}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Note"}
+            {isSubmitting 
+              ? (isEditMode ? "Updating..." : "Saving...") 
+              : (isEditMode ? "Update Note" : "Save Note")}
           </Button>
         </CardFooter>
       </Card>

@@ -8,13 +8,14 @@ import {
   collection, 
   query, 
   where, 
-  getDocs
+  getDocs,
+  updateDoc
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { Project } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Loader2, Trash } from "lucide-react";
+import { ArrowLeft, Loader2, Trash, Pencil } from "lucide-react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import { User } from "firebase/auth";
@@ -27,6 +28,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const ProjectView = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -35,7 +39,11 @@ const ProjectView = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -73,6 +81,8 @@ const ProjectView = () => {
           }
           
           setProject({ id: projectId, ...projectData } as Project);
+          setEditName(projectData.name);
+          setEditDescription(projectData.description || "");
         } else {
           toast({
             title: "Project Not Found",
@@ -94,7 +104,7 @@ const ProjectView = () => {
     };
 
     fetchProject();
-  }, [projectId, currentUser, navigate, toast]);
+  }, [projectId, currentUser, navigate, toast, refreshTrigger]);
 
   const handleNoteAdded = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -147,6 +157,45 @@ const ProjectView = () => {
     }
   };
 
+  const handleEditProject = async () => {
+    if (!projectId || !project) return;
+    
+    if (!editName.trim()) {
+      toast({
+        title: "Name Required",
+        description: "Please provide a name for your reading pass",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsEditing(true);
+    try {
+      await updateDoc(doc(db, "projects", projectId), {
+        name: editName.trim(),
+        description: editDescription.trim(),
+      });
+      
+      toast({
+        title: "Reading Pass Updated",
+        description: "Your reading pass has been updated successfully",
+      });
+      
+      // Refresh project data
+      setRefreshTrigger(prev => prev + 1);
+      setIsEditDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error updating project:", error);
+      toast({
+        title: "Failed to update reading pass",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -161,7 +210,7 @@ const ProjectView = () => {
 
   return (
     <div className="min-h-screen">
-      <header className={`py-4 ${project.color || 'bg-sand-300'}`}>
+      <header className={`py-4 ${project.color || 'bg-primary/20'}`}>
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-4">
             <Button 
@@ -173,15 +222,26 @@ const ProjectView = () => {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Dashboard
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
-              onClick={() => setIsDeleteDialogOpen(true)}
-            >
-              <Trash className="h-4 w-4 mr-1" />
-              Delete Pass
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/80"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash className="h-4 w-4 mr-1" />
+                Delete
+              </Button>
+            </div>
           </div>
           <h1 className="text-3xl font-serif font-bold text-primary-foreground">{project.name}</h1>
           {project.description && (
@@ -238,6 +298,56 @@ const ProjectView = () => {
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete Reading Pass"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="glass-card animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Edit Reading Pass</DialogTitle>
+            <DialogDescription>
+              Update the details of your reading pass
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Name</Label>
+              <Input
+                id="project-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter reading pass name"
+                disabled={isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-description">Description (optional)</Label>
+              <Textarea
+                id="project-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Enter a brief description"
+                className="resize-none"
+                disabled={isEditing}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={isEditing}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEditProject}
+              disabled={isEditing}
+            >
+              {isEditing ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
