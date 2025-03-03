@@ -213,7 +213,7 @@ export const Note = ({ note, onDelete, projectId, userId }: NoteProps) => {
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <h3 className="font-semibold">Arabic Text</h3>
-                <p className="text-right font-arabic text-lg leading-relaxed p-3 bg-accent/50 rounded-md">
+                <p className="text-right font-kitab text-2xl leading-relaxed p-3 bg-accent/50 rounded-md">
                   {verseData.text}
                 </p>
               </div>

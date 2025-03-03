@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -98,15 +98,24 @@ body {
   overscroll-behavior: none;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply font-serif;
 }
 
-input, textarea, select, button {
+input,
+textarea,
+select,
+button {
   font-size: 16px; /* Prevents iOS zooming */
 }
 
-html, body {
+html,
+body {
   overscroll-behavior-y: none;
   position: fixed;
   overflow: hidden;
@@ -194,4 +203,15 @@ html, body {
 .page-transition-exit-active {
   opacity: 0;
   transition: opacity 300ms;
+}
+
+@font-face {
+  font-family: "Kitab";
+  src: url("/fonts/Kitab-Regular.ttf");
+}
+
+.font-kitab {
+  font-family: "Kitab";
+  font-display: swap;
+  font-weight: 400;
 }
