@@ -111,9 +111,7 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
   return (
     <form onSubmit={handleSubmit}>
       <Card className="glass-card animate-fade-in">
-        <CardHeader>
-          <CardTitle>Add New Note</CardTitle>
-        </CardHeader>
+        <CardHeader>{/* <CardTitle>New Note</CardTitle> */}</CardHeader>
         <CardContent className="space-y-6">
           {isTranscriberReady !== false && (
             <VoiceRecorder
@@ -128,7 +126,9 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
             <Label htmlFor="note">Your Note</Label>
             <Textarea
               id="note"
-              placeholder="Type your note here or use the voice recorder above..."
+              placeholder={`Type your note here${
+                isTranscriberReady ? " or use the voice recorder above" : ""
+              }...`}
               value={transcription}
               onChange={(e) => setTranscription(e.target.value)}
               className="min-h-[100px] resize-y"
