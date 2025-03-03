@@ -1,11 +1,24 @@
-
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuranNote, QuranVerse } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { Eye, ExternalLink, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
@@ -79,7 +92,10 @@ export const Note = ({ note, onDelete }: NoteProps) => {
               Surah {note.surah}:{note.verse}
             </CardTitle>
             <CardDescription>
-              {note.createdAt && formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true })}
+              {note.createdAt &&
+                formatDistanceToNow(note.createdAt.toDate(), {
+                  addSuffix: true,
+                })}
             </CardDescription>
           </div>
         </CardHeader>
@@ -87,9 +103,9 @@ export const Note = ({ note, onDelete }: NoteProps) => {
           <p className="text-base whitespace-pre-wrap">{note.text}</p>
         </CardContent>
         <CardFooter className="flex justify-between pt-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-xs gap-1"
             onClick={handleViewVerse}
             disabled={isLoading}
@@ -97,9 +113,9 @@ export const Note = ({ note, onDelete }: NoteProps) => {
             <Eye className="h-3 w-3" />
             View Verse
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-xs text-destructive gap-1"
             onClick={() => setIsDeleteDialogOpen(true)}
             disabled={isLoading}
@@ -116,19 +132,20 @@ export const Note = ({ note, onDelete }: NoteProps) => {
           <DialogHeader>
             <DialogTitle>Delete Note</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this note? This action cannot be undone.
+              Are you sure you want to delete this note? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               disabled={isLoading}
             >
@@ -140,14 +157,16 @@ export const Note = ({ note, onDelete }: NoteProps) => {
 
       {/* Verse View Dialog */}
       <Dialog open={isVerseDialogOpen} onOpenChange={toggleVerseDialog}>
-        <DialogContent className="glass-card animate-fade-in">
+        <DialogContent className="glass-card animate-fade-in max-h-[100vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>Surah {note.surah}, Verse {note.verse}</DialogTitle>
+            <DialogTitle>
+              Surah {note.surah}, Verse {note.verse}
+            </DialogTitle>
             <DialogDescription>
               View the Quran verse related to this note
             </DialogDescription>
           </DialogHeader>
-          
+
           {verseData ? (
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -156,7 +175,7 @@ export const Note = ({ note, onDelete }: NoteProps) => {
                   {verseData.text}
                 </p>
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="font-semibold">Translation</h3>
                 <p className="text-muted-foreground p-3 bg-secondary/50 rounded-md">
@@ -169,21 +188,22 @@ export const Note = ({ note, onDelete }: NoteProps) => {
               <p className="text-muted-foreground">Loading verse data...</p>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="gap-1"
-              onClick={() => window.open(`https://quran.com/${note.surah}/${note.verse}`, '_blank')}
+              onClick={() =>
+                window.open(
+                  `https://quran.com/${note.surah}/${note.verse}`,
+                  "_blank"
+                )
+              }
             >
               <ExternalLink className="h-4 w-4" />
               Open on Quran.com
             </Button>
-            <Button
-              onClick={() => toggleVerseDialog(false)}
-            >
-              Close
-            </Button>
+            <Button onClick={() => toggleVerseDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

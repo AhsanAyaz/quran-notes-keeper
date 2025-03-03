@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -30,7 +29,9 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
   const [verse, setVerse] = useState<number | string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [maxVerse, setMaxVerse] = useState<number>(0);
-  const [isTranscriberReady, setIsTranscriberReady] = useState(false);
+  const [isTranscriberReady, setIsTranscriberReady] = useState<boolean | null>(
+    null
+  );
   const { toast } = useToast();
 
   // Extract Surah and verse information when transcription changes
@@ -114,9 +115,14 @@ export const NoteForm = ({ projectId, userId, onNoteAdded }: NoteFormProps) => {
           <CardTitle>Add New Note</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <VoiceRecorder
-            onTranscriptionComplete={handleTranscriptionComplete}
-          />
+          {isTranscriberReady !== false && (
+            <VoiceRecorder
+              onTranscriptionComplete={handleTranscriptionComplete}
+              onTranscriberStatus={(status) => {
+                setIsTranscriberReady(status);
+              }}
+            />
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="note">Your Note</Label>
