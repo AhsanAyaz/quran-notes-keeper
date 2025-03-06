@@ -15,6 +15,14 @@ The application is deployed at: https://quran-notes-keeper.netlify.app
 # Install dependencies
 npm install
 
+
+# Create a firebase project first at https://console.firebase.google.com/
+
+# Copy the .env.example file and rename it to .env
+cp .env.example .env
+
+# Add the values for the firebase environment variables in the .env file
+
 # Start development server
 npm run dev
 
