@@ -27,12 +27,14 @@ interface NoteListProps {
   userId: string;
   projectId?: string; // Optional - if not provided, show all notes across projects
   refreshTrigger?: number; // Use to trigger a refresh from parent
+  onNotesLoaded?: (notes: QuranNote[]) => void; // New callback to send notes to parent
 }
 
 export const NoteList = ({
   userId,
   projectId,
   refreshTrigger = 0,
+  onNotesLoaded,
 }: NoteListProps) => {
   const [notes, setNotes] = useState<QuranNote[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<QuranNote[]>([]);
@@ -72,6 +74,11 @@ export const NoteList = ({
         setNotes(notesList);
         setFilteredNotes(notesList);
         setIsLoading(false);
+        
+        // Call the callback to pass notes to parent
+        if (onNotesLoaded) {
+          onNotesLoaded(notesList);
+        }
       },
       (error) => {
         console.error("Error fetching notes:", error);
@@ -85,7 +92,7 @@ export const NoteList = ({
     );
 
     return () => unsubscribe();
-  }, [userId, projectId, refreshTrigger, toast]);
+  }, [userId, projectId, refreshTrigger, toast, onNotesLoaded]);
 
   // Filter and sort notes when search query or sort option changes
   useEffect(() => {

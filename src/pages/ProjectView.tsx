@@ -14,11 +14,12 @@ import { db, auth } from "@/lib/firebase";
 import { Project, QuranNote } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Loader2, Trash, Pencil } from "lucide-react";
+import { ArrowLeft, Loader2, Trash, Pencil, FileText, Download } from "lucide-react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import { User } from "firebase/auth";
 import { Separator } from "@/components/ui/separator";
+import { exportNotesToPDF } from "@/lib/pdfExport";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,8 @@ const ProjectView = () => {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [selectedNote, setSelectedNote] = useState<QuranNote | null>(null);
+  const [projectNotes, setProjectNotes] = useState<QuranNote[]>([]);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -186,6 +189,47 @@ const ProjectView = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    if (!projectId || !project) return;
+
+    setIsExportingPDF(true);
+    try {
+      // Fetch all notes for this project if not already loaded
+      if (projectNotes.length === 0) {
+        const notesQuery = query(
+          collection(db, "notes"),
+          where("projectId", "==", projectId)
+        );
+        const notesSnapshot = await getDocs(notesQuery);
+        const notesList = notesSnapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as QuranNote)
+        );
+        setProjectNotes(notesList);
+        exportNotesToPDF(notesList, project.name);
+      } else {
+        exportNotesToPDF(projectNotes, project.name);
+      }
+
+      toast({
+        title: "PDF Exported",
+        description: "Your notes have been exported to PDF",
+      });
+    } catch (error: any) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
+  const handleNotesLoaded = (notes: QuranNote[]) => {
+    setProjectNotes(notes);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -213,6 +257,25 @@ const ProjectView = () => {
               Back to Dashboard
             </Button>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/80"
+                onClick={handleExportPDF}
+                disabled={isExportingPDF}
+              >
+                {isExportingPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-1" />
+                    Export PDF
+                  </>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -261,7 +324,8 @@ const ProjectView = () => {
             <NoteList 
               userId={currentUser.uid} 
               projectId={project.id} 
-              refreshTrigger={refreshTrigger} 
+              refreshTrigger={refreshTrigger}
+              onNotesLoaded={handleNotesLoaded}
             />
           </div>
         </div>
