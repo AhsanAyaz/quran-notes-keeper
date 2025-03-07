@@ -241,7 +241,7 @@ export const NoteForm = ({
               ) : versePreview ? (
                 <>
                   <p
-                    className="text-right font-medium leading-relaxed"
+                    className="text-right font-kitab text-xl font-medium leading-relaxed"
                     dir="rtl"
                     lang="ar"
                   >
