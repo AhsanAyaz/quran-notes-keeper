@@ -1,5 +1,5 @@
 const CACHE_NAME = "quran-notes-keeper-v1";
-const APP_VERSION = "1.0.5"; // Change this value whenever you make updates
+const APP_VERSION = "1.0.6"; // Incremented version number for new deployment
 
 // Install the service worker and cache assets
 self.addEventListener("install", (event) => {
@@ -47,15 +47,19 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Skip the cache for HTML and JS files to ensure fresh content
+// Skip the cache for HTML, JS, CSS files and API calls to ensure fresh content
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const isHTMLPage = event.request.mode === "navigate";
   const isJSAsset = url.pathname.endsWith(".js");
   const isCSSAsset = url.pathname.endsWith(".css");
+  
+  // Don't cache any API calls, specifically the Quran API
+  const isQuranAPI = url.hostname.includes("api.alquran.cloud");
+  const isAPICall = url.pathname.includes("/api/") || isQuranAPI;
 
-  // Skip cache for main resources to ensure fresh content
-  if (isHTMLPage || isJSAsset || isCSSAsset) {
+  // Skip cache for main resources and API calls to ensure fresh content
+  if (isHTMLPage || isJSAsset || isCSSAsset || isAPICall) {
     console.log("Fetching new version of resource:", url.pathname);
     event.respondWith(
       fetch(event.request).catch((error) => {
@@ -74,10 +78,11 @@ self.addEventListener("fetch", (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((response) => {
-        // Don't cache API requests
+        // Don't cache API requests or firebase auth
         if (
           !event.request.url.includes("/api/") &&
-          !event.request.url.includes("firebaseauth")
+          !event.request.url.includes("firebaseauth") &&
+          !isQuranAPI
         ) {
           // Clone the response
           const responseToCache = response.clone();

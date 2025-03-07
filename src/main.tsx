@@ -30,8 +30,7 @@ if ('serviceWorker' in navigator) {
                 if (navigator.serviceWorker.controller) {
                   // New update available
                   console.log('New version available! Refreshing...');
-                  // You could show a notification here using the toast system
-                  // For simplicity, we'll just reload the page
+                  // Show a notification using the toast system
                   if (window.confirm('A new version is available. Reload now?')) {
                     registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
                     window.location.reload();
