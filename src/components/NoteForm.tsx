@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -44,20 +43,20 @@ export const NoteForm = ({
   const [isTranscriberReady, setIsTranscriberReady] = useState<boolean | null>(null);
   const [versePreview, setVersePreview] = useState<{arabic: string, translation: string} | null>(null);
   const [isLoadingVerse, setIsLoadingVerse] = useState(false);
+  const [shouldShowPlaceholder, setShouldShowPlaceholder] = useState(true);
   const { toast } = useToast();
   const isEditMode = Boolean(noteToEdit);
 
-  // Initialize form with note data if in edit mode
   useEffect(() => {
     if (noteToEdit) {
       setTranscription(noteToEdit.text);
       setSurah(noteToEdit.surah);
       setVerse(noteToEdit.verse);
       setMaxVerse(getMaxVerseNumber(noteToEdit.surah));
+      setShouldShowPlaceholder(false);
     }
   }, [noteToEdit]);
 
-  // Extract Surah and verse information when transcription changes
   useEffect(() => {
     if (transcription && !isEditMode) {
       const { surah, verse } = extractSurahVerse(transcription);
@@ -66,9 +65,9 @@ export const NoteForm = ({
     }
   }, [transcription, isEditMode]);
 
-  // Fetch verse preview when surah and verse are available
   useEffect(() => {
     if (surah && verse) {
+      setShouldShowPlaceholder(true);
       fetchVersePreview(Number(surah), Number(verse));
     } else {
       setVersePreview(null);
@@ -87,9 +86,11 @@ export const NoteForm = ({
         arabic: verseData.text,
         translation: verseData.translation
       });
+      setShouldShowPlaceholder(false);
     } catch (error) {
       console.error("Error fetching verse:", error);
       setVersePreview(null);
+      setShouldShowPlaceholder(false);
     } finally {
       setIsLoadingVerse(false);
     }
@@ -104,6 +105,7 @@ export const NoteForm = ({
     setSurah("");
     setVerse("");
     setVersePreview(null);
+    setShouldShowPlaceholder(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,7 +135,6 @@ export const NoteForm = ({
       let noteData;
       
       if (isEditMode && noteToEdit) {
-        // Update existing note
         const noteRef = doc(db, "notes", noteToEdit.id);
         await updateDoc(noteRef, {
           surah: Number(surah),
@@ -156,7 +157,6 @@ export const NoteForm = ({
         
         if (onCancelEdit) onCancelEdit();
       } else {
-        // Create new note
         const newNoteData = {
           surah: Number(surah),
           verse: Number(verse),
@@ -179,11 +179,9 @@ export const NoteForm = ({
           description: `Note for Surah ${surah}:${verse} has been saved`,
         });
 
-        // Reset form only for new notes
         resetForm();
       }
 
-      // Notify parent component with the complete note data
       onNoteAdded(noteData as QuranNote);
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -211,12 +209,15 @@ export const NoteForm = ({
           <CardTitle>{isEditMode ? "Edit Note" : "New Note"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Verse Preview Section */}
-          {(isLoadingVerse || versePreview) && (
-            <div className="rounded-lg p-4 bg-primary/10 space-y-2">
+          {(isLoadingVerse || versePreview || shouldShowPlaceholder) && (
+            <div className="rounded-lg p-4 bg-primary/10 space-y-2 min-h-[120px]">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Book className="h-4 w-4" />
-                <span>Quran {surah}:{verse}</span>
+                <span>
+                  {surah && verse 
+                    ? `Quran ${surah}:${verse}` 
+                    : "Enter surah and verse to preview"}
+                </span>
               </div>
               
               {isLoadingVerse ? (
@@ -232,11 +233,15 @@ export const NoteForm = ({
                     {versePreview.translation}
                   </p>
                 </>
+              ) : shouldShowPlaceholder ? (
+                <div className="flex flex-col gap-2 py-3 opacity-50">
+                  <div className="w-full h-6 bg-muted/30 rounded text-right"></div>
+                  <div className="w-full h-12 bg-muted/20 rounded"></div>
+                </div>
               ) : null}
             </div>
           )}
 
-          {/* Voice Recorder */}
           {!isEditMode && isTranscriberReady !== false && (
             <VoiceRecorder
               onTranscriptionComplete={handleTranscriptionComplete}
