@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -48,7 +47,6 @@ const ProjectView = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check authentication and fetch project data
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -60,7 +58,6 @@ const ProjectView = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Fetch project data
   useEffect(() => {
     if (!projectId || !currentUser) return;
 
@@ -70,7 +67,6 @@ const ProjectView = () => {
         if (projectDoc.exists()) {
           const projectData = projectDoc.data() as Omit<Project, "id">;
           
-          // Make sure the user has access to this project
           if (projectData.userId !== currentUser.uid) {
             toast({
               title: "Access Denied",
@@ -107,13 +103,8 @@ const ProjectView = () => {
     fetchProject();
   }, [projectId, currentUser, navigate, toast, refreshTrigger]);
 
-  const handleNoteAdded = (note?: QuranNote) => {
+  const handleNoteAdded = () => {
     setRefreshTrigger(prev => prev + 1);
-    
-    // If we have a note object, set it as the selected note to open it
-    if (note) {
-      setSelectedNote(note);
-    }
   };
 
   const handleDeleteProject = async () => {
@@ -123,24 +114,19 @@ const ProjectView = () => {
     try {
       const batch = writeBatch(db);
       
-      // Delete all notes associated with this project
       const notesQuery = query(
         collection(db, "notes"),
         where("projectId", "==", projectId)
       );
       
-      // Get all notes matching the query
       const notesSnapshot = await getDocs(notesQuery);
       
-      // Add delete operations to batch
       notesSnapshot.docs.forEach((noteDoc) => {
         batch.delete(doc(db, "notes", noteDoc.id));
       });
       
-      // Delete the project itself
       batch.delete(doc(db, "projects", projectId));
       
-      // Commit the batch
       await batch.commit();
       
       toast({
@@ -148,7 +134,6 @@ const ProjectView = () => {
         description: `"${project.name}" and all associated notes have been deleted`,
       });
       
-      // Navigate to dashboard after deletion
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Error deleting project:", error);
@@ -187,7 +172,6 @@ const ProjectView = () => {
         description: "Your reading pass has been updated successfully",
       });
       
-      // Refresh project data
       setRefreshTrigger(prev => prev + 1);
       setIsEditDialogOpen(false);
     } catch (error: any) {
@@ -283,7 +267,6 @@ const ProjectView = () => {
         </div>
       </main>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="glass-card animate-fade-in">
           <DialogHeader>
@@ -311,7 +294,6 @@ const ProjectView = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Project Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="glass-card animate-fade-in">
           <DialogHeader>

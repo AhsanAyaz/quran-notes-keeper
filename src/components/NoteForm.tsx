@@ -196,7 +196,7 @@ export const NoteForm = ({
         resetForm();
       }
 
-      onNoteAdded(noteData as QuranNote);
+      onNoteAdded();
     } catch (error) {
       const firebaseError = error as FirebaseError;
       console.error("Error saving note:", error);
