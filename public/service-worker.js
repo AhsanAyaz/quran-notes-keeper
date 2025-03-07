@@ -1,5 +1,5 @@
 const CACHE_NAME = "quran-notes-keeper-v1";
-const APP_VERSION = "1.0.6"; // Incremented version number for new deployment
+const APP_VERSION = "1.0.7"; // Incremented version number for new deployment
 
 // Install the service worker and cache assets
 self.addEventListener("install", (event) => {
@@ -53,7 +53,7 @@ self.addEventListener("fetch", (event) => {
   const isHTMLPage = event.request.mode === "navigate";
   const isJSAsset = url.pathname.endsWith(".js");
   const isCSSAsset = url.pathname.endsWith(".css");
-  
+
   // Don't cache any API calls, specifically the Quran API
   const isQuranAPI = url.hostname.includes("api.alquran.cloud");
   const isAPICall = url.pathname.includes("/api/") || isQuranAPI;
