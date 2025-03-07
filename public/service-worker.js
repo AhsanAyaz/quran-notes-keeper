@@ -1,5 +1,5 @@
 const CACHE_NAME = "quran-notes-keeper-v1";
-const APP_VERSION = "1.0.7"; // Incremented version number for new deployment
+const APP_VERSION = "1.0.8"; // Incremented version number for new deployment
 
 // Install the service worker and cache assets
 self.addEventListener("install", (event) => {
