@@ -21,7 +21,7 @@ export const NoteList = ({ userId, projectId, refreshTrigger = 0 }: NoteListProp
   const [filteredNotes, setFilteredNotes] = useState<QuranNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState<"surah-asc" | "surah-desc" | "recent" | "oldest">("surah-asc");
+  const [sortOption, setSortOption] = useState<"surah-asc" | "surah-desc" | "recent" | "oldest">("recent");
   const { toast } = useToast();
 
   // Fetch notes from Firestore
@@ -34,9 +34,8 @@ export const NoteList = ({ userId, projectId, refreshTrigger = 0 }: NoteListProp
       constraints.push(where("projectId", "==", projectId));
     }
     
-    // Add default sorting
-    constraints.push(orderBy("surah", "asc"));
-    constraints.push(orderBy("verse", "asc"));
+    // Add default sorting by creation time (most recent first)
+    constraints.push(orderBy("createdAt", "desc"));
 
     const notesQuery = query(collection(db, "notes"), ...constraints);
 
@@ -185,7 +184,7 @@ export const NoteList = ({ userId, projectId, refreshTrigger = 0 }: NoteListProp
       ) : (
         <div className="space-y-4">
           {filteredNotes.map((note) => (
-            <Note key={note.id} note={note} onDelete={handleDeleteNote} />
+            <Note key={note.id} note={note} onDelete={handleDeleteNote} onUpdate={() => {}} projectId={projectId || ""} userId={userId} />
           ))}
         </div>
       )}

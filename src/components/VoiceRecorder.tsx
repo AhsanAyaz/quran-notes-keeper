@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Square, Loader2 } from "lucide-react";
+import { Mic, Square, Loader2, AlertCircle } from "lucide-react";
 import {
   pipeline,
   AutomaticSpeechRecognitionPipeline,
 } from "@huggingface/transformers";
 import { useToast } from "@/components/ui/use-toast";
+import { isMobileDevice } from "@/lib/deviceDetect";
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
@@ -29,6 +30,7 @@ export const VoiceRecorder = ({
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const whisperId = "onnx-community/whisper-tiny.en";
+  const isMobile = isMobileDevice();
 
   const transcribeRef = useRef<AutomaticSpeechRecognitionPipeline | null>(null);
   const { toast } = useToast();
@@ -36,6 +38,13 @@ export const VoiceRecorder = ({
 
   useEffect(() => {
     let isMounted = true;
+
+    // If on mobile, disable the transcriber
+    if (isMobile) {
+      onTranscriberStatus?.(false);
+      setTranscriptionEnabled(false);
+      return;
+    }
 
     const initializeTranscriber = async () => {
       try {
@@ -107,7 +116,7 @@ export const VoiceRecorder = ({
     return () => {
       isMounted = false;
     };
-  }, [toast, onTranscriberStatus]);
+  }, [toast, onTranscriberStatus, isMobile]);
 
   const startRecording = async () => {
     try {
@@ -349,6 +358,26 @@ export const VoiceRecorder = ({
     onTranscriptionComplete(e.target.value);
   };
 
+  // For mobile devices, just show the textarea
+  if (isMobile) {
+    return (
+      <Card className="w-full animate-fade-in glass-card">
+        <CardContent className="p-6 space-y-4">
+          <Textarea
+            className="min-h-[120px] resize-none font-medium"
+            placeholder="Type your notes here..."
+            value={transcription}
+            onChange={handleTranscriptionChange}
+            rows={3}
+          />
+          <div className="text-xs text-muted-foreground mt-2">
+            Voice recording is disabled on mobile devices.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full animate-fade-in glass-card">
       <CardContent className="p-6 space-y-4">
@@ -402,7 +431,7 @@ export const VoiceRecorder = ({
         )}
 
         <Textarea
-          className="min-h-[120px] resize-none! font-medium"
+          className="min-h-[120px] resize-none font-medium"
           placeholder={
             transcriptionEnabled
               ? `Your transcription will appear here... or you can type directly`

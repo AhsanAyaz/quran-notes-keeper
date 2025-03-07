@@ -12,7 +12,7 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { Project } from "@/lib/types";
+import { Project, QuranNote } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Loader2, Trash, Pencil } from "lucide-react";
@@ -44,6 +44,7 @@ const ProjectView = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [selectedNote, setSelectedNote] = useState<QuranNote | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -106,8 +107,13 @@ const ProjectView = () => {
     fetchProject();
   }, [projectId, currentUser, navigate, toast, refreshTrigger]);
 
-  const handleNoteAdded = () => {
+  const handleNoteAdded = (note?: QuranNote) => {
     setRefreshTrigger(prev => prev + 1);
+    
+    // If we have a note object, set it as the selected note to open it
+    if (note) {
+      setSelectedNote(note);
+    }
   };
 
   const handleDeleteProject = async () => {
@@ -259,6 +265,8 @@ const ProjectView = () => {
                 projectId={project.id} 
                 userId={currentUser.uid} 
                 onNoteAdded={handleNoteAdded} 
+                noteToEdit={selectedNote}
+                onCancelEdit={() => setSelectedNote(null)}
               />
             </div>
           </div>

@@ -18,11 +18,13 @@ import { db } from "@/lib/firebase";
 import VoiceRecorder from "./VoiceRecorder";
 import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
 import { QuranNote } from "@/lib/types";
+import { fetchQuranVerse } from "@/lib/quranApi";
+import { Loader2, Book } from "lucide-react";
 
 interface NoteFormProps {
   projectId: string;
   userId: string;
-  onNoteAdded: () => void;
+  onNoteAdded: (note?: QuranNote) => void;
   noteToEdit?: QuranNote | null;
   onCancelEdit?: () => void;
 }
@@ -39,9 +41,9 @@ export const NoteForm = ({
   const [verse, setVerse] = useState<number | string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [maxVerse, setMaxVerse] = useState<number>(0);
-  const [isTranscriberReady, setIsTranscriberReady] = useState<boolean | null>(
-    null
-  );
+  const [isTranscriberReady, setIsTranscriberReady] = useState<boolean | null>(null);
+  const [versePreview, setVersePreview] = useState<{arabic: string, translation: string} | null>(null);
+  const [isLoadingVerse, setIsLoadingVerse] = useState(false);
   const { toast } = useToast();
   const isEditMode = Boolean(noteToEdit);
 
@@ -64,6 +66,35 @@ export const NoteForm = ({
     }
   }, [transcription, isEditMode]);
 
+  // Fetch verse preview when surah and verse are available
+  useEffect(() => {
+    if (surah && verse) {
+      fetchVersePreview(Number(surah), Number(verse));
+    } else {
+      setVersePreview(null);
+    }
+  }, [surah, verse]);
+
+  const fetchVersePreview = async (surahNum: number, verseNum: number) => {
+    if (isNaN(surahNum) || isNaN(verseNum) || surahNum < 1 || surahNum > 114 || verseNum < 1) {
+      return;
+    }
+    
+    setIsLoadingVerse(true);
+    try {
+      const verseData = await fetchQuranVerse(surahNum, verseNum);
+      setVersePreview({
+        arabic: verseData.text,
+        translation: verseData.translation
+      });
+    } catch (error) {
+      console.error("Error fetching verse:", error);
+      setVersePreview(null);
+    } finally {
+      setIsLoadingVerse(false);
+    }
+  };
+
   const handleTranscriptionComplete = (text: string) => {
     setTranscription(text);
   };
@@ -72,6 +103,7 @@ export const NoteForm = ({
     setTranscription("");
     setSurah("");
     setVerse("");
+    setVersePreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,6 +130,8 @@ export const NoteForm = ({
     setIsSubmitting(true);
 
     try {
+      let noteData;
+      
       if (isEditMode && noteToEdit) {
         // Update existing note
         const noteRef = doc(db, "notes", noteToEdit.id);
@@ -108,6 +142,13 @@ export const NoteForm = ({
           updatedAt: serverTimestamp(),
         });
 
+        noteData = {
+          ...noteToEdit,
+          surah: Number(surah),
+          verse: Number(verse),
+          text: transcription.trim(),
+        };
+        
         toast({
           title: "Note Updated",
           description: `Note for Surah ${surah}:${verse} has been updated`,
@@ -116,7 +157,7 @@ export const NoteForm = ({
         if (onCancelEdit) onCancelEdit();
       } else {
         // Create new note
-        const noteData = {
+        const newNoteData = {
           surah: Number(surah),
           verse: Number(verse),
           text: transcription.trim(),
@@ -126,7 +167,12 @@ export const NoteForm = ({
           updatedAt: serverTimestamp(),
         };
 
-        await addDoc(collection(db, "notes"), noteData);
+        const docRef = await addDoc(collection(db, "notes"), newNoteData);
+        
+        noteData = {
+          id: docRef.id,
+          ...newNoteData,
+        };
 
         toast({
           title: "Note Saved",
@@ -137,8 +183,8 @@ export const NoteForm = ({
         resetForm();
       }
 
-      // Notify parent component
-      onNoteAdded();
+      // Notify parent component with the complete note data
+      onNoteAdded(noteData as QuranNote);
     } catch (error) {
       const firebaseError = error as FirebaseError;
       console.error("Error saving note:", error);
@@ -165,6 +211,32 @@ export const NoteForm = ({
           <CardTitle>{isEditMode ? "Edit Note" : "New Note"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Verse Preview Section */}
+          {(isLoadingVerse || versePreview) && (
+            <div className="rounded-lg p-4 bg-primary/10 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Book className="h-4 w-4" />
+                <span>Quran {surah}:{verse}</span>
+              </div>
+              
+              {isLoadingVerse ? (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              ) : versePreview ? (
+                <>
+                  <p className="text-right font-medium leading-relaxed" dir="rtl" lang="ar">
+                    {versePreview.arabic}
+                  </p>
+                  <p className="text-sm text-muted-foreground italic">
+                    {versePreview.translation}
+                  </p>
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {/* Voice Recorder */}
           {!isEditMode && isTranscriberReady !== false && (
             <VoiceRecorder
               onTranscriptionComplete={handleTranscriptionComplete}
