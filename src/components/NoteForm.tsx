@@ -12,7 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { FirebaseError } from "firebase/app";
-import { addDoc, collection, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VoiceRecorder from "./VoiceRecorder";
 import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
@@ -28,20 +34,25 @@ interface NoteFormProps {
   onCancelEdit?: () => void;
 }
 
-export const NoteForm = ({ 
-  projectId, 
-  userId, 
-  onNoteAdded, 
+export const NoteForm = ({
+  projectId,
+  userId,
+  onNoteAdded,
   noteToEdit = null,
-  onCancelEdit
+  onCancelEdit,
 }: NoteFormProps) => {
   const [transcription, setTranscription] = useState("");
   const [surah, setSurah] = useState<number | string>("");
   const [verse, setVerse] = useState<number | string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [maxVerse, setMaxVerse] = useState<number>(0);
-  const [isTranscriberReady, setIsTranscriberReady] = useState<boolean | null>(null);
-  const [versePreview, setVersePreview] = useState<{arabic: string, translation: string} | null>(null);
+  const [isTranscriberReady, setIsTranscriberReady] = useState<boolean | null>(
+    null
+  );
+  const [versePreview, setVersePreview] = useState<{
+    arabic: string;
+    translation: string;
+  } | null>(null);
   const [isLoadingVerse, setIsLoadingVerse] = useState(false);
   const [shouldShowPlaceholder, setShouldShowPlaceholder] = useState(true);
   const { toast } = useToast();
@@ -53,7 +64,6 @@ export const NoteForm = ({
       setSurah(noteToEdit.surah);
       setVerse(noteToEdit.verse);
       setMaxVerse(getMaxVerseNumber(noteToEdit.surah));
-      setShouldShowPlaceholder(false);
     }
   }, [noteToEdit]);
 
@@ -75,22 +85,26 @@ export const NoteForm = ({
   }, [surah, verse]);
 
   const fetchVersePreview = async (surahNum: number, verseNum: number) => {
-    if (isNaN(surahNum) || isNaN(verseNum) || surahNum < 1 || surahNum > 114 || verseNum < 1) {
+    if (
+      isNaN(surahNum) ||
+      isNaN(verseNum) ||
+      surahNum < 1 ||
+      surahNum > 114 ||
+      verseNum < 1
+    ) {
       return;
     }
-    
+
     setIsLoadingVerse(true);
     try {
       const verseData = await fetchQuranVerse(surahNum, verseNum);
       setVersePreview({
         arabic: verseData.text,
-        translation: verseData.translation
+        translation: verseData.translation,
       });
-      setShouldShowPlaceholder(false);
     } catch (error) {
       console.error("Error fetching verse:", error);
       setVersePreview(null);
-      setShouldShowPlaceholder(false);
     } finally {
       setIsLoadingVerse(false);
     }
@@ -133,7 +147,7 @@ export const NoteForm = ({
 
     try {
       let noteData;
-      
+
       if (isEditMode && noteToEdit) {
         const noteRef = doc(db, "notes", noteToEdit.id);
         await updateDoc(noteRef, {
@@ -149,12 +163,12 @@ export const NoteForm = ({
           verse: Number(verse),
           text: transcription.trim(),
         };
-        
+
         toast({
           title: "Note Updated",
           description: `Note for Surah ${surah}:${verse} has been updated`,
         });
-        
+
         if (onCancelEdit) onCancelEdit();
       } else {
         const newNoteData = {
@@ -168,7 +182,7 @@ export const NoteForm = ({
         };
 
         const docRef = await addDoc(collection(db, "notes"), newNoteData);
-        
+
         noteData = {
           id: docRef.id,
           ...newNoteData,
@@ -214,19 +228,23 @@ export const NoteForm = ({
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Book className="h-4 w-4" />
                 <span>
-                  {surah && verse 
-                    ? `Quran ${surah}:${verse}` 
+                  {surah && verse
+                    ? `Quran ${surah}:${verse}`
                     : "Enter surah and verse to preview"}
                 </span>
               </div>
-              
+
               {isLoadingVerse ? (
                 <div className="flex justify-center py-3">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 </div>
               ) : versePreview ? (
                 <>
-                  <p className="text-right font-medium leading-relaxed" dir="rtl" lang="ar">
+                  <p
+                    className="text-right font-medium leading-relaxed"
+                    dir="rtl"
+                    lang="ar"
+                  >
                     {versePreview.arabic}
                   </p>
                   <p className="text-sm text-muted-foreground italic">
@@ -256,7 +274,9 @@ export const NoteForm = ({
             <Textarea
               id="note"
               placeholder={`Type your note here${
-                !isEditMode && isTranscriberReady ? " or use the voice recorder above" : ""
+                !isEditMode && isTranscriberReady
+                  ? " or use the voice recorder above"
+                  : ""
               }...`}
               value={transcription}
               onChange={(e) => setTranscription(e.target.value)}
@@ -299,10 +319,10 @@ export const NoteForm = ({
         </CardContent>
         <CardFooter className="flex gap-2">
           {isEditMode && (
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full" 
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
               onClick={handleCancel}
               disabled={isSubmitting}
             >
@@ -310,9 +330,13 @@ export const NoteForm = ({
             </Button>
           )}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting 
-              ? (isEditMode ? "Updating..." : "Saving...") 
-              : (isEditMode ? "Update Note" : "Save Note")}
+            {isSubmitting
+              ? isEditMode
+                ? "Updating..."
+                : "Saving..."
+              : isEditMode
+              ? "Update Note"
+              : "Save Note"}
           </Button>
         </CardFooter>
       </Card>
