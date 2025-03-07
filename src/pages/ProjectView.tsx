@@ -1,20 +1,27 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { 
-  doc, 
-  getDoc, 
-  writeBatch, 
-  collection, 
-  query, 
-  where, 
+import {
+  doc,
+  getDoc,
+  writeBatch,
+  collection,
+  query,
+  where,
   getDocs,
-  updateDoc
+  updateDoc,
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { Project, QuranNote } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Loader2, Trash, Pencil, FileText, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Trash,
+  Pencil,
+  FileText,
+  Download,
+} from "lucide-react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import { User } from "firebase/auth";
@@ -69,7 +76,7 @@ const ProjectView = () => {
         const projectDoc = await getDoc(doc(db, "projects", projectId));
         if (projectDoc.exists()) {
           const projectData = projectDoc.data() as Omit<Project, "id">;
-          
+
           if (projectData.userId !== currentUser.uid) {
             toast({
               title: "Access Denied",
@@ -79,7 +86,7 @@ const ProjectView = () => {
             navigate("/dashboard");
             return;
           }
-          
+
           setProject({ id: projectId, ...projectData } as Project);
           setEditName(projectData.name);
           setEditDescription(projectData.description || "");
@@ -107,36 +114,36 @@ const ProjectView = () => {
   }, [projectId, currentUser, navigate, toast, refreshTrigger]);
 
   const handleNoteAdded = () => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const handleDeleteProject = async () => {
     if (!projectId || !project) return;
-    
+
     setIsDeleting(true);
     try {
       const batch = writeBatch(db);
-      
+
       const notesQuery = query(
         collection(db, "notes"),
         where("projectId", "==", projectId)
       );
-      
+
       const notesSnapshot = await getDocs(notesQuery);
-      
+
       notesSnapshot.docs.forEach((noteDoc) => {
         batch.delete(doc(db, "notes", noteDoc.id));
       });
-      
+
       batch.delete(doc(db, "projects", projectId));
-      
+
       await batch.commit();
-      
+
       toast({
         title: "Reading Pass Deleted",
         description: `"${project.name}" and all associated notes have been deleted`,
       });
-      
+
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Error deleting project:", error);
@@ -153,7 +160,7 @@ const ProjectView = () => {
 
   const handleEditProject = async () => {
     if (!projectId || !project) return;
-    
+
     if (!editName.trim()) {
       toast({
         title: "Name Required",
@@ -162,20 +169,20 @@ const ProjectView = () => {
       });
       return;
     }
-    
+
     setIsEditing(true);
     try {
       await updateDoc(doc(db, "projects", projectId), {
         name: editName.trim(),
         description: editDescription.trim(),
       });
-      
+
       toast({
         title: "Reading Pass Updated",
         description: "Your reading pass has been updated successfully",
       });
-      
-      setRefreshTrigger(prev => prev + 1);
+
+      setRefreshTrigger((prev) => prev + 1);
       setIsEditDialogOpen(false);
     } catch (error: any) {
       console.error("Error updating project:", error);
@@ -244,19 +251,19 @@ const ProjectView = () => {
 
   return (
     <div className="min-h-screen">
-      <header className={`py-4 ${project.color || 'bg-primary/20'}`}>
+      <header className={`py-4 ${project.color || "bg-primary/20"}`}>
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white/80"
-              onClick={() => navigate("/dashboard")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
-            </Button>
-            <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+            <div className="flex gap-2 justify-between items-center w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/80"
+                onClick={() => navigate("/dashboard")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back to Dashboard
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -276,30 +283,36 @@ const ProjectView = () => {
                   </>
                 )}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-white/80"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                <Pencil className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <Trash className="h-4 w-4 mr-1" />
-                Delete
-              </Button>
             </div>
           </div>
-          <h1 className="text-3xl font-serif font-bold text-primary-foreground">{project.name}</h1>
+          <h1 className="text-3xl font-serif font-bold text-primary-foreground">
+            {project.name}
+          </h1>
           {project.description && (
-            <p className="text-primary-foreground/80 mt-1">{project.description}</p>
+            <p className="text-primary-foreground/80 mt-1">
+              {project.description}
+            </p>
           )}
+        </div>
+        <div className="px-4 flex gap-2 justify-end items-center w-ful my-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-white/80"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            <Pencil className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            <Trash className="h-4 w-4 mr-1" />
+            Delete
+          </Button>
         </div>
       </header>
 
@@ -308,22 +321,22 @@ const ProjectView = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               <h2 className="text-xl font-bold mb-4">Add New Note</h2>
-              <NoteForm 
-                projectId={project.id} 
-                userId={currentUser.uid} 
-                onNoteAdded={handleNoteAdded} 
+              <NoteForm
+                projectId={project.id}
+                userId={currentUser.uid}
+                onNoteAdded={handleNoteAdded}
                 noteToEdit={selectedNote}
                 onCancelEdit={() => setSelectedNote(null)}
               />
             </div>
           </div>
-          
+
           <div className="lg:col-span-2">
             <h2 className="text-xl font-bold mb-4">Project Notes</h2>
             <Separator className="mb-6" />
-            <NoteList 
-              userId={currentUser.uid} 
-              projectId={project.id} 
+            <NoteList
+              userId={currentUser.uid}
+              projectId={project.id}
               refreshTrigger={refreshTrigger}
               onNotesLoaded={handleNotesLoaded}
             />
@@ -336,19 +349,21 @@ const ProjectView = () => {
           <DialogHeader>
             <DialogTitle>Delete Reading Pass</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{project.name}"? This will permanently remove this reading pass and ALL notes associated with it. This action cannot be undone.
+              Are you sure you want to delete "{project.name}"? This will
+              permanently remove this reading pass and ALL notes associated with
+              it. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={isDeleting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteProject}
               disabled={isDeleting}
             >
@@ -378,7 +393,9 @@ const ProjectView = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project-description">Description (optional)</Label>
+              <Label htmlFor="project-description">
+                Description (optional)
+              </Label>
               <Textarea
                 id="project-description"
                 value={editDescription}
@@ -390,17 +407,14 @@ const ProjectView = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
               disabled={isEditing}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditProject}
-              disabled={isEditing}
-            >
+            <Button onClick={handleEditProject} disabled={isEditing}>
               {isEditing ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
