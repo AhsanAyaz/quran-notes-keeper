@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Card,
@@ -106,7 +107,7 @@ export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps)
       <NoteForm
         projectId={projectId}
         userId={userId}
-        noteToEdit={note}
+        noteToEdit={{...note}} // Pass a copy of the note to prevent reference issues
         onNoteAdded={handleNoteUpdated}
         onCancelEdit={handleCancelEdit}
       />

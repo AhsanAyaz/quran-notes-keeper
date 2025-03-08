@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import {
   collection,
   query,
@@ -72,8 +73,6 @@ export const NoteList = ({
         );
 
         setNotes(notesList);
-        setFilteredNotes(notesList);
-        setIsLoading(false);
         
         // Call the callback to pass notes to parent
         if (onNotesLoaded) {
@@ -94,9 +93,13 @@ export const NoteList = ({
     return () => unsubscribe();
   }, [userId, projectId, refreshTrigger, toast, onNotesLoaded]);
 
-  // Filter and sort notes when search query or sort option changes
-  useEffect(() => {
-    if (!notes.length) return;
+  // Filter and sort notes when search query, sort option, or notes change
+  // Use memoized filter function to prevent unnecessary re-renders
+  const filterAndSortNotes = useCallback(() => {
+    if (!notes.length) {
+      setFilteredNotes([]);
+      return;
+    }
 
     let filtered = [...notes];
 
@@ -126,27 +129,38 @@ export const NoteList = ({
         break;
       case "recent":
         filtered.sort(
-          (a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()
+          (a, b) => {
+            const aTime = a.createdAt?.toMillis() || 0;
+            const bTime = b.createdAt?.toMillis() || 0;
+            return bTime - aTime;
+          }
         );
         break;
       case "oldest":
         filtered.sort(
-          (a, b) => a.createdAt?.toMillis() - b.createdAt?.toMillis()
+          (a, b) => {
+            const aTime = a.createdAt?.toMillis() || 0;
+            const bTime = b.createdAt?.toMillis() || 0;
+            return aTime - bTime;
+          }
         );
         break;
     }
 
     setFilteredNotes(filtered);
+    setIsLoading(false);
   }, [notes, searchQuery, sortOption]);
+
+  // Apply filtering and sorting whenever dependencies change
+  useEffect(() => {
+    filterAndSortNotes();
+  }, [filterAndSortNotes]);
 
   const handleDeleteNote = (noteId: string) => {
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
-    setFilteredNotes((prevNotes) =>
-      prevNotes.filter((note) => note.id !== noteId)
-    );
   };
 
-  if (isLoading) {
+  if (isLoading && notes.length === 0) {
     return (
       <div className="flex justify-center items-center h-48">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
