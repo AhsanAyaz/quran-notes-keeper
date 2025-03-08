@@ -1,5 +1,6 @@
+
 const CACHE_NAME = "quran-notes-keeper-v1";
-const APP_VERSION = "1.0.8"; // Incremented version number for new deployment
+const APP_VERSION = "1.0.9"; // Incremented version number for new deployment
 
 // Install the service worker and cache assets
 self.addEventListener("install", (event) => {
@@ -49,6 +50,12 @@ self.addEventListener("activate", (event) => {
 
 // Skip the cache for HTML, JS, CSS files and API calls to ensure fresh content
 self.addEventListener("fetch", (event) => {
+  // Only handle GET requests, ignore other HTTP methods like POST
+  if (event.request.method !== 'GET') {
+    console.log(`Ignoring non-GET method: ${event.request.method}`);
+    return;
+  }
+
   const url = new URL(event.request.url);
   const isHTMLPage = event.request.mode === "navigate";
   const isJSAsset = url.pathname.endsWith(".js");
@@ -88,7 +95,14 @@ self.addEventListener("fetch", (event) => {
           const responseToCache = response.clone();
 
           caches.open(CACHE_NAME + "-" + APP_VERSION).then((cache) => {
-            cache.put(event.request, responseToCache);
+            // Only cache successful responses
+            if (response.ok) {
+              try {
+                cache.put(event.request, responseToCache);
+              } catch (e) {
+                console.error("Failed to cache response:", e);
+              }
+            }
           });
         }
         return response;
