@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import {
   collection,
@@ -73,7 +72,7 @@ export const NoteList = ({
         );
 
         setNotes(notesList);
-        
+
         // Call the callback to pass notes to parent
         if (onNotesLoaded) {
           onNotesLoaded(notesList);
@@ -91,7 +90,8 @@ export const NoteList = ({
     );
 
     return () => unsubscribe();
-  }, [userId, projectId, refreshTrigger, toast, onNotesLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filter and sort notes when search query, sort option, or notes change
   // Use memoized filter function to prevent unnecessary re-renders
@@ -128,22 +128,18 @@ export const NoteList = ({
         );
         break;
       case "recent":
-        filtered.sort(
-          (a, b) => {
-            const aTime = a.createdAt?.toMillis() || 0;
-            const bTime = b.createdAt?.toMillis() || 0;
-            return bTime - aTime;
-          }
-        );
+        filtered.sort((a, b) => {
+          const aTime = a.createdAt?.toMillis() || 0;
+          const bTime = b.createdAt?.toMillis() || 0;
+          return bTime - aTime;
+        });
         break;
       case "oldest":
-        filtered.sort(
-          (a, b) => {
-            const aTime = a.createdAt?.toMillis() || 0;
-            const bTime = b.createdAt?.toMillis() || 0;
-            return aTime - bTime;
-          }
-        );
+        filtered.sort((a, b) => {
+          const aTime = a.createdAt?.toMillis() || 0;
+          const bTime = b.createdAt?.toMillis() || 0;
+          return aTime - bTime;
+        });
         break;
     }
 
