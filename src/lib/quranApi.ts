@@ -29,9 +29,10 @@ export const fetchQuranVerse = async (
     const translationData = await translationResponse.json();
 
     return {
-      number: verseNumber,
+      verse: arabicData.data.numberInSurah,
       text: arabicData.data.text,
       translation: translationData.data.text,
+      surah: arabicData.data.surah.number,
     };
   } catch (error) {
     console.error("Error fetching Quran verse:", error);

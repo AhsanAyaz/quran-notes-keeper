@@ -20,7 +20,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import VoiceRecorder from "./VoiceRecorder";
+// import VoiceRecorder from "./VoiceRecorder";
 import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
 import { QuranNote } from "@/lib/types";
 import { fetchQuranVerse } from "@/lib/quranApi";
@@ -52,6 +52,8 @@ export const NoteForm = ({
   const [versePreview, setVersePreview] = useState<{
     arabic: string;
     translation: string;
+    verse: number;
+    surah: number;
   } | null>(null);
   const [isLoadingVerse, setIsLoadingVerse] = useState(false);
   const [shouldShowPlaceholder, setShouldShowPlaceholder] = useState(true);
@@ -76,12 +78,19 @@ export const NoteForm = ({
   }, [transcription, isEditMode]);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     if (surah && verse) {
       setShouldShowPlaceholder(true);
-      fetchVersePreview(Number(surah), Number(verse));
+
+      timeoutId = setTimeout(() => {
+        fetchVersePreview(Number(surah), Number(verse));
+      }, 500);
     } else {
       setVersePreview(null);
     }
+
+    return () => clearTimeout(timeoutId);
   }, [surah, verse]);
 
   const fetchVersePreview = async (surahNum: number, verseNum: number) => {
@@ -101,6 +110,8 @@ export const NoteForm = ({
       setVersePreview({
         arabic: verseData.text,
         translation: verseData.translation,
+        verse: verseData.verse,
+        surah: verseData.surah,
       });
     } catch (error) {
       console.error("Error fetching verse:", error);
@@ -228,8 +239,8 @@ export const NoteForm = ({
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Book className="h-4 w-4" />
                 <span>
-                  {surah && verse
-                    ? `Quran ${surah}:${verse}`
+                  {versePreview?.surah && versePreview?.verse
+                    ? `Quran ${versePreview.surah}:${versePreview.verse}`
                     : "Enter surah and verse to preview"}
                 </span>
               </div>
@@ -260,14 +271,14 @@ export const NoteForm = ({
             </div>
           )}
 
-          {!isEditMode && isTranscriberReady !== false && (
+          {/* {!isEditMode && isTranscriberReady !== false && (
             <VoiceRecorder
               onTranscriptionComplete={handleTranscriptionComplete}
               onTranscriberStatus={(status) => {
                 setIsTranscriberReady(status);
               }}
             />
-          )}
+          )} */}
 
           <div className="space-y-2">
             <Label htmlFor="note">Your Note</Label>

@@ -1,4 +1,3 @@
-
 import { Timestamp } from "firebase/firestore";
 
 export interface QuranNote {
@@ -14,9 +13,10 @@ export interface QuranNote {
 }
 
 export interface QuranVerse {
-  number: number;
+  verse: number;
   text: string;
   translation: string;
+  surah: number;
 }
 
 export interface QuranSurah {
