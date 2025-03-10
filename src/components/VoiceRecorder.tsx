@@ -228,6 +228,8 @@ export const VoiceRecorder = ({
       // Sometimes stop() can throw an error if the recorder is in an invalid state
       try {
         mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current = null;
       } catch (e) {
         console.error("Error stopping MediaRecorder:", e);
       }
