@@ -72,6 +72,7 @@ export const NoteList = ({
         );
 
         setNotes(notesList);
+        setIsLoading(false);
 
         // Call the callback to pass notes to parent
         if (onNotesLoaded) {
