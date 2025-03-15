@@ -1,4 +1,3 @@
-
 import { QuranNote, QuranVerse } from "./types";
 import html2canvas from "html2canvas";
 
@@ -24,7 +23,7 @@ export const createShareableImage = async (
   container.style.boxSizing = "border-box";
   container.style.borderRadius = "12px";
   container.style.overflow = "hidden";
-  
+
   // Add semi-transparent overlay for better text readability
   const overlay = document.createElement("div");
   overlay.style.position = "absolute";
@@ -35,7 +34,7 @@ export const createShareableImage = async (
   overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
   overlay.style.zIndex = "1";
   container.appendChild(overlay);
-  
+
   // Create content wrapper with higher z-index
   const content = document.createElement("div");
   content.style.position = "relative";
@@ -44,7 +43,7 @@ export const createShareableImage = async (
   content.style.flexDirection = "column";
   content.style.gap = "30px";
   content.style.textAlign = "center";
-  
+
   // Surah and verse reference
   const reference = document.createElement("h2");
   reference.style.fontSize = "40px";
@@ -52,13 +51,12 @@ export const createShareableImage = async (
   reference.style.margin = "0";
   reference.textContent = `Surah ${note.surah}, Verse ${note.verse}`;
   content.appendChild(reference);
-  
+
   // Add Arabic text if available
   if (verse?.text) {
     const arabicText = document.createElement("p");
     arabicText.style.fontSize = "48px";
-    arabicText.style.fontFamily = "'Kitab', Arial";
-    arabicText.style.fontWeight = "bold";
+    arabicText.style.fontFamily = "Kitab, Arial";
     arabicText.style.direction = "rtl";
     arabicText.style.margin = "20px 0";
     arabicText.style.lineHeight = "1.5";
@@ -68,7 +66,7 @@ export const createShareableImage = async (
     arabicText.textContent = verse.text;
     content.appendChild(arabicText);
   }
-  
+
   // Add separator line
   const separator = document.createElement("hr");
   separator.style.width = "200px";
@@ -76,7 +74,7 @@ export const createShareableImage = async (
   separator.style.border = "none";
   separator.style.borderTop = "2px solid rgba(255, 255, 255, 0.7)";
   content.appendChild(separator);
-  
+
   // Add translation if available
   if (verse?.translation) {
     const translation = document.createElement("blockquote");
@@ -91,7 +89,7 @@ export const createShareableImage = async (
     translation.textContent = `"${verse.translation}"`;
     content.appendChild(translation);
   }
-  
+
   // Add user note
   const noteElement = document.createElement("div");
   noteElement.style.fontSize = "32px";
@@ -101,42 +99,42 @@ export const createShareableImage = async (
   noteElement.style.padding = "30px";
   noteElement.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
   noteElement.style.borderRadius = "8px";
-  noteElement.textContent = `"${note.text}"`;
+  noteElement.textContent = `Note:\n"${note.text}"`;
   content.appendChild(noteElement);
-  
+
   // Add app reference
   const appReference = document.createElement("div");
   appReference.style.fontSize = "24px";
   appReference.style.marginTop = "40px";
   appReference.style.opacity = "0.8";
-  
+
   const appName = document.createElement("p");
   appName.style.margin = "5px 0";
   appName.textContent = "Created with Quran Notes Keeper";
-  
+
   const appUrl = document.createElement("p");
   appUrl.style.margin = "5px 0";
   appUrl.textContent = "quran-notes-keeper.netlify.app";
-  
+
   appReference.appendChild(appName);
   appReference.appendChild(appUrl);
   content.appendChild(appReference);
-  
+
   // Append content to container
   container.appendChild(content);
-  
+
   // Append container to body temporarily
   document.body.appendChild(container);
-  
+
   try {
     // Use html2canvas to convert HTML to image
     const canvas = await html2canvas(container, {
       allowTaint: true,
       useCORS: true,
       scale: 1,
-      backgroundColor: null
+      backgroundColor: null,
     });
-    
+
     // Convert canvas to data URL
     return canvas.toDataURL("image/png");
   } finally {
@@ -156,7 +154,7 @@ export const shareToSocialMedia = async (
 ) => {
   // Create sharing text
   const shareText = `I created a note with Quran Notes Keeper about Surah ${note.surah}, Verse ${note.verse}. Check it out at https://quran-notes-keeper.netlify.app`;
-  
+
   // Download image for Instagram and for fallback
   const downloadImage = () => {
     const link = document.createElement("a");
@@ -166,13 +164,13 @@ export const shareToSocialMedia = async (
     link.click();
     document.body.removeChild(link);
   };
-  
+
   // Create a blob from the image URL for proper sharing
   const getImageBlob = async (): Promise<Blob> => {
     const response = await fetch(imageUrl);
     return await response.blob();
   };
-  
+
   // Platform-specific sharing
   try {
     switch (platform) {
@@ -186,13 +184,13 @@ export const shareToSocialMedia = async (
           "_blank"
         );
         break;
-        
+
       case "instagram":
         // Instagram doesn't support direct sharing via web API
         // Download the image and prompt the user
         downloadImage();
         return "image_downloaded";
-        
+
       case "linkedin":
         // LinkedIn sharing
         window.open(
@@ -202,21 +200,23 @@ export const shareToSocialMedia = async (
           "_blank"
         );
         break;
-        
+
       case "twitter":
         // Twitter (X) sharing
         window.open(
           `https://twitter.com/intent/tweet?text=${encodeURIComponent(
             shareText
-          )}&url=${encodeURIComponent("https://quran-notes-keeper.netlify.app")}`,
+          )}&url=${encodeURIComponent(
+            "https://quran-notes-keeper.netlify.app"
+          )}`,
           "_blank"
         );
         break;
-        
+
       default:
         break;
     }
-    
+
     return "shared";
   } catch (error) {
     console.error("Error sharing:", error);
@@ -231,31 +231,31 @@ export const shareToSocialMedia = async (
  * (kept for backward compatibility)
  */
 function wrapText(
-  ctx: CanvasRenderingContext2D, 
-  text: string, 
-  x: number, 
-  y: number, 
-  maxWidth: number, 
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
   lineHeight: number
 ) {
-  const words = text.split(' ');
-  let line = '';
-  let testLine = '';
+  const words = text.split(" ");
+  let line = "";
+  let testLine = "";
   let lineCount = 0;
 
   for (let n = 0; n < words.length; n++) {
-    testLine = line + words[n] + ' ';
+    testLine = line + words[n] + " ";
     const metrics = ctx.measureText(testLine);
     const testWidth = metrics.width;
-    
+
     if (testWidth > maxWidth && n > 0) {
-      ctx.fillText(line, x, y + (lineCount * lineHeight));
-      line = words[n] + ' ';
+      ctx.fillText(line, x, y + lineCount * lineHeight);
+      line = words[n] + " ";
       lineCount++;
     } else {
       line = testLine;
     }
   }
-  
-  ctx.fillText(line, x, y + (lineCount * lineHeight));
+
+  ctx.fillText(line, x, y + lineCount * lineHeight);
 }
