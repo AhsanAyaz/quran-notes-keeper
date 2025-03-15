@@ -25,6 +25,7 @@ import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchQuranVerse } from "@/lib/quranApi";
 import NoteForm from "./NoteForm";
+import NoteShare from "./NoteShare";
 
 interface NoteProps {
   note: QuranNote;
@@ -145,6 +146,7 @@ export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps)
               <Eye className="h-3 w-3" />
               View Verse
             </Button>
+            <NoteShare note={note} />
           </div>
           <div className="flex gap-1">
             <Button
