@@ -20,6 +20,7 @@ import {
   Linkedin,
   Download,
   Loader2,
+  Twitter,
 } from "lucide-react";
 
 interface NoteShareProps {
@@ -57,7 +58,7 @@ export const NoteShare = ({ note }: NoteShareProps) => {
     }
   };
 
-  const handleShare = async (platform: "facebook" | "instagram" | "linkedin") => {
+  const handleShare = async (platform: "facebook" | "instagram" | "linkedin" | "twitter") => {
     if (!shareImage) return;
 
     try {
@@ -68,10 +69,15 @@ export const NoteShare = ({ note }: NoteShareProps) => {
           title: "Image Downloaded",
           description: "The image has been downloaded. Please manually upload it to Instagram.",
         });
+      } else if (result === "fallback_download") {
+        toast({
+          title: "Direct Sharing Not Available",
+          description: "The image has been downloaded. Please manually upload it to your platform of choice.",
+        });
       } else {
         toast({
-          title: "Shared Successfully",
-          description: `Your note has been shared to ${platform}.`,
+          title: "Share Initiated",
+          description: `A new window has opened to share to ${platform}.`,
         });
       }
     } catch (error: any) {
@@ -138,7 +144,7 @@ export const NoteShare = ({ note }: NoteShareProps) => {
                     className="w-full h-auto" 
                   />
                 </div>
-                <div className="grid grid-cols-4 gap-2 w-full max-w-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-sm">
                   <Button
                     onClick={() => handleShare("facebook")}
                     variant="outline"
@@ -164,9 +170,17 @@ export const NoteShare = ({ note }: NoteShareProps) => {
                     <span className="text-xs">LinkedIn</span>
                   </Button>
                   <Button
-                    onClick={handleDownload}
+                    onClick={() => handleShare("twitter")}
                     variant="outline"
                     className="flex flex-col items-center justify-center h-16"
+                  >
+                    <Twitter className="h-5 w-5 mb-1" />
+                    <span className="text-xs">Twitter</span>
+                  </Button>
+                  <Button
+                    onClick={handleDownload}
+                    variant="outline"
+                    className="flex flex-col items-center justify-center h-16 col-span-2 sm:col-span-4"
                   >
                     <Download className="h-5 w-5 mb-1" />
                     <span className="text-xs">Download</span>
