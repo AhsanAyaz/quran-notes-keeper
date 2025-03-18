@@ -25,6 +25,7 @@ import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
 import { QuranNote } from "@/lib/types";
 import { fetchQuranVerse } from "@/lib/quranApi";
 import { Loader2, Book } from "lucide-react";
+import { SURAHS_LIST } from "@/lib/surahs-list";
 
 interface NoteFormProps {
   projectId: string;
@@ -65,7 +66,7 @@ export const NoteForm = ({
       setTranscription(noteToEdit.text);
       setSurah(noteToEdit.surah);
       setVerse(noteToEdit.verse);
-      setMaxVerse(getMaxVerseNumber(noteToEdit.surah));
+      setMaxVerse(getMaxVerseNumber(noteToEdit.surah, SURAHS_LIST));
     }
   }, [noteToEdit]);
 
@@ -84,6 +85,11 @@ export const NoteForm = ({
       setShouldShowPlaceholder(true);
 
       timeoutId = setTimeout(() => {
+        const surahMaxVerse = getMaxVerseNumber(Number(surah), SURAHS_LIST);
+        if (Number(verse) > surahMaxVerse) {
+          setVerse(surahMaxVerse);
+          return;
+        }
         fetchVersePreview(Number(surah), Number(verse));
       }, 500);
     } else {
@@ -139,7 +145,7 @@ export const NoteForm = ({
     if (!transcription.trim()) {
       toast({
         title: "Note Required",
-        description: "Please record or type your note",
+        description: "Please type your note before saving",
         variant: "destructive",
       });
       return;
@@ -307,7 +313,9 @@ export const NoteForm = ({
                 value={surah}
                 onChange={(e) => {
                   setSurah(e.target.value);
-                  setMaxVerse(getMaxVerseNumber(parseInt(e.target.value)));
+                  setMaxVerse(
+                    getMaxVerseNumber(parseInt(e.target.value), SURAHS_LIST)
+                  );
                 }}
                 placeholder="1-114"
                 disabled={isSubmitting}
