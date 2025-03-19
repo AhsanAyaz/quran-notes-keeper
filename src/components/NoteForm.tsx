@@ -241,7 +241,7 @@ export const NoteForm = ({
         </CardHeader>
         <CardContent className="space-y-6">
           {(isLoadingVerse || versePreview || shouldShowPlaceholder) && (
-            <div className="rounded-lg p-4 bg-primary/10 space-y-2 min-h-[120px]">
+            <div className="rounded-lg p-4 bg-primary/10 space-y-2 h-72 overflow-y-auto">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Book className="h-4 w-4" />
                 <span>
@@ -250,7 +250,6 @@ export const NoteForm = ({
                     : "Enter surah and verse to preview"}
                 </span>
               </div>
-
               {isLoadingVerse ? (
                 <div className="flex justify-center py-3">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
