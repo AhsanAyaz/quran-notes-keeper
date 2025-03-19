@@ -316,6 +316,7 @@ export const NoteForm = ({
                   setMaxVerse(
                     getMaxVerseNumber(parseInt(e.target.value), SURAHS_LIST)
                   );
+                  setVerse("");
                 }}
                 placeholder="1-114"
                 disabled={isSubmitting}
