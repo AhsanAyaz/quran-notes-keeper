@@ -99,10 +99,6 @@ export const NoteForm = ({
     return () => clearTimeout(timeoutId);
   }, [surah, verse]);
 
-  useEffect(() => {
-    setVerse("");
-  }, [surah]);
-
   const fetchVersePreview = async (surahNum: number, verseNum: number) => {
     if (
       isNaN(surahNum) ||
@@ -320,6 +316,7 @@ export const NoteForm = ({
                   setMaxVerse(
                     getMaxVerseNumber(parseInt(e.target.value), SURAHS_LIST)
                   );
+                  setVerse("");
                 }}
                 placeholder="1-114"
                 disabled={isSubmitting}
