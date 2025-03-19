@@ -32,7 +32,7 @@ export const NoteMoveToAnotherPass = ({
   userId,
 }: NoteMoveToAnotherPassProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isMoving, setIsMoving] = useState(false);
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -74,11 +74,6 @@ export const NoteMoveToAnotherPass = ({
     return () => unsubscribe();
   }, [userId, toast]);
 
-  const handleMoveNoteClick = () => {
-    setIsDialogOpen(true);
-    setIsLoading(true);
-  };
-
   const handleMoveToProject = async (projectId: string) => {
     if (projectId === note.projectId) return;
 
@@ -115,7 +110,7 @@ export const NoteMoveToAnotherPass = ({
         variant="ghost"
         size="sm"
         className="text-xs gap-1"
-        onClick={handleMoveNoteClick}
+        onClick={() => setIsDialogOpen(true)}
       >
         <Move className="h-3 w-3" />
         Move to another pass
@@ -136,11 +131,11 @@ export const NoteMoveToAnotherPass = ({
             {isLoading ? (
               <div className="text-center py-4">
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p>Loading projects...</p>
+                <p>Loading passes...</p>
               </div>
             ) : projects.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                No other projects found
+                No other passes found
               </div>
             ) : (
               <div className="w-full space-y-2">
