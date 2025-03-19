@@ -313,6 +313,7 @@ export const NoteForm = ({
                 value={surah}
                 onChange={(e) => {
                   setSurah(e.target.value);
+                  setVerse("");
                   setMaxVerse(
                     getMaxVerseNumber(parseInt(e.target.value), SURAHS_LIST)
                   );
