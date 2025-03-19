@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Card,
@@ -26,6 +25,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { fetchQuranVerse } from "@/lib/quranApi";
 import NoteForm from "./NoteForm";
 import NoteShare from "./NoteShare";
+import { NoteMoveToAnotherPass } from "./NoteMoveToAnotherPass";
 
 interface NoteProps {
   note: QuranNote;
@@ -35,7 +35,13 @@ interface NoteProps {
   userId: string;
 }
 
-export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps) => {
+export const Note = ({
+  note,
+  onDelete,
+  onUpdate,
+  projectId,
+  userId,
+}: NoteProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isVerseDialogOpen, setIsVerseDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -108,7 +114,7 @@ export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps)
       <NoteForm
         projectId={projectId}
         userId={userId}
-        noteToEdit={{...note}} // Pass a copy of the note to prevent reference issues
+        noteToEdit={{ ...note }} // Pass a copy of the note to prevent reference issues
         onNoteAdded={handleNoteUpdated}
         onCancelEdit={handleCancelEdit}
       />
@@ -147,6 +153,7 @@ export const Note = ({ note, onDelete, onUpdate, projectId, userId }: NoteProps)
               View Verse
             </Button>
             <NoteShare note={note} />
+            <NoteMoveToAnotherPass note={note} userId={userId} />
           </div>
           <div className="flex gap-1">
             <Button
