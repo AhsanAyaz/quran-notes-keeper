@@ -99,6 +99,10 @@ export const NoteForm = ({
     return () => clearTimeout(timeoutId);
   }, [surah, verse]);
 
+  useEffect(() => {
+    setVerse("");
+  }, [surah]);
+
   const fetchVersePreview = async (surahNum: number, verseNum: number) => {
     if (
       isNaN(surahNum) ||
