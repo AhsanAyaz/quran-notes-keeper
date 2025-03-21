@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "@/lib/firebase";
@@ -37,16 +36,19 @@ const Index = () => {
           <div className="inline-block bg-primary/10 p-3 rounded-full mb-4">
             <BookOpen className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="text-4xl font-serif font-bold text-primary mb-2">Quran Notes Keeper</h1>
+          <h1 className="text-4xl font-serif font-bold text-primary mb-2">
+            Quran Notes
+          </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Record your voice notes as you read the Quran, organized by chapter and verse.
+            Record your voice notes as you read the Quran, organized by chapter
+            and verse.
           </p>
         </div>
-        
+
         <div className="w-full max-w-md">
           <Auth />
         </div>
-        
+
         <div className="mt-16 text-center text-muted-foreground text-sm">
           <p>Use your voice to easily record reflections while reading</p>
           <p>Organize notes by chapter and verse for easy reference</p>

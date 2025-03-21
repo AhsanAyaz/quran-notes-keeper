@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signInWithPopup,
-  signOut, 
+  signOut,
   onAuthStateChanged,
   User
 } from "firebase/auth";
@@ -121,8 +121,8 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
           </CardDescription>
         </CardHeader>
         <CardFooter>
-          <Button 
-            onClick={handleSignOut} 
+          <Button
+            onClick={handleSignOut}
             className="w-full"
             variant="outline"
           >
@@ -136,7 +136,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
   return (
     <Card className="w-full max-w-md mx-auto glass-card animate-fade-in">
       <CardHeader>
-        <CardTitle className="text-center">Quran Notes Keeper</CardTitle>
+        <CardTitle className="text-center">Quran Notes</CardTitle>
         <CardDescription className="text-center">
           Sign in to access your notes
         </CardDescription>
@@ -169,8 +169,8 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 disabled={isLoading}
               />
             </div>
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleSignIn}
               disabled={isLoading}
             >
@@ -186,8 +186,8 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 </span>
               </div>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full"
               onClick={handleGoogleSignIn}
               disabled={isLoading}
@@ -217,8 +217,8 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 disabled={isLoading}
               />
             </div>
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleSignUp}
               disabled={isLoading}
             >
@@ -234,8 +234,8 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 </span>
               </div>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full"
               onClick={handleGoogleSignIn}
               disabled={isLoading}

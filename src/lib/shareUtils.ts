@@ -1,6 +1,8 @@
 import { QuranNote, QuranVerse } from "./types";
 import html2canvas from "html2canvas";
 
+const deploymentUrl = "https://quran-notes.com";
+
 /**
  * Creates an image from a note and verse for social media sharing
  * using HTML elements instead of canvas directly
@@ -110,11 +112,11 @@ export const createShareableImage = async (
 
   const appName = document.createElement("p");
   appName.style.margin = "5px 0";
-  appName.textContent = "Created with Quran Notes Keeper";
+  appName.textContent = "Created with Quran Notes";
 
   const appUrl = document.createElement("p");
   appUrl.style.margin = "5px 0";
-  appUrl.textContent = "quran-notes-keeper.netlify.app";
+  appUrl.textContent = deploymentUrl.replace("https://", "");
 
   appReference.appendChild(appName);
   appReference.appendChild(appUrl);
@@ -153,7 +155,7 @@ export const shareToSocialMedia = async (
   verse?: QuranVerse
 ) => {
   // Create sharing text
-  const shareText = `I created a note with Quran Notes Keeper about Surah ${note.surah}, Verse ${note.verse}. Check it out at https://quran-notes-keeper.netlify.app`;
+  const shareText = `I created a note with Quran Notes about Surah ${note.surah}, Verse ${note.verse}. Check it out at ${deploymentUrl}`;
 
   // Download image for Instagram and for fallback
   const downloadImage = () => {
@@ -179,7 +181,7 @@ export const shareToSocialMedia = async (
         // But we can still share the URL with text
         window.open(
           `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-            "https://quran-notes-keeper.netlify.app"
+            deploymentUrl
           )}&quote=${encodeURIComponent(shareText)}`,
           "_blank"
         );
@@ -195,7 +197,7 @@ export const shareToSocialMedia = async (
         // LinkedIn sharing
         window.open(
           `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-            "https://quran-notes-keeper.netlify.app"
+            deploymentUrl
           )}`,
           "_blank"
         );
@@ -206,9 +208,7 @@ export const shareToSocialMedia = async (
         window.open(
           `https://twitter.com/intent/tweet?text=${encodeURIComponent(
             shareText
-          )}&url=${encodeURIComponent(
-            "https://quran-notes-keeper.netlify.app"
-          )}`,
+          )}&url=${encodeURIComponent(deploymentUrl)}`,
           "_blank"
         );
         break;

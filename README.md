@@ -1,8 +1,8 @@
-# Quran Notes Keeper
+# Quran Notes
 
-Quran Notes Keeper is a web application created to help users read the Quran and maintain their notes across multiple readings. It provides an organized way to track insights and reflections.
+Quran Notes is a web application created to help users read the Quran and maintain their notes across multiple readings. It provides an organized way to track insights and reflections.
 
-The application is deployed at: https://quran-notes-keeper.netlify.app
+The application is deployed at: https://quran-notes.com
 
 ## Getting Started
 
