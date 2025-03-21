@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "firebase/auth";
@@ -51,20 +50,25 @@ const Dashboard = () => {
               <BookOpen className="h-6 w-6 text-primary" />
               <h1 className="text-2xl font-serif font-bold">Quran Notes</h1>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Avatar>
                   <AvatarImage src={currentUser.photoURL || undefined} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {getUserInitials(currentUser.displayName, currentUser.email)}
+                    {getUserInitials(
+                      currentUser.displayName,
+                      currentUser.email
+                    )}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-sm hidden md:block">
-                  <p className="font-medium">{currentUser.displayName || currentUser.email}</p>
+                  <p className="font-medium">
+                    {currentUser.displayName || currentUser.email}
+                  </p>
                 </div>
               </div>
-              
+
               <Button variant="ghost" size="icon" onClick={handleSignOut}>
                 <LogOut className="h-5 w-5" />
                 <span className="sr-only">Sign out</span>
@@ -86,11 +90,11 @@ const Dashboard = () => {
               <span>All Notes</span>
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="projects" className="animate-fade-in">
             {currentUser && <ProjectList userId={currentUser.uid} />}
           </TabsContent>
-          
+
           <TabsContent value="all-notes" className="animate-fade-in">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-2xl font-bold mb-6">All Notes</h2>
