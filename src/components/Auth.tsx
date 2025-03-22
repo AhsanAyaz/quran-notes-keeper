@@ -32,31 +32,41 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Handle redirect result
-    getRedirectResult(auth)
-      .then((result) => {
+    setIsLoading(true);
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result) {
           toast({
             title: "Signed in with Google",
             description: "You have successfully signed in with Google",
           });
         }
-      })
-      .catch((error) => {
-        if (error.code !== "auth/redirect-cancelled-by-user") {
+      } catch (error) {
+        if (
+          error instanceof FirebaseError &&
+          error.code !== "auth/redirect-cancelled-by-user"
+        ) {
           toast({
             title: "Google sign in failed",
             description: error.message,
             variant: "destructive",
           });
         }
-      });
+      } finally {
+        setIsLoading(false);
+        setIsRedirecting(false);
+      }
+    };
+    checkRedirect();
+  }, [toast]);
 
-    // Listen for auth state changes
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (onAuthStateChange) {
@@ -65,7 +75,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
     });
 
     return () => unsubscribe();
-  }, [onAuthStateChange, toast]);
+  }, [onAuthStateChange]);
 
   const handleSignUp = async () => {
     setIsLoading(true);
@@ -114,11 +124,14 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (isRedirecting) return;
+
+    setIsRedirecting(true);
     setIsLoading(true);
     try {
       await signInWithRedirect(auth, googleProvider);
-      // No need for success toast here as it will be handled in the redirect result
     } catch (error) {
+      setIsRedirecting(false);
       setIsLoading(false);
       const errorMessage =
         error instanceof FirebaseError
@@ -193,7 +206,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               />
             </div>
             <div className="space-y-2">
@@ -203,13 +216,13 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleSignIn}
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
             >
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
@@ -227,7 +240,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
               variant="outline"
               className="w-full"
               onClick={handleGoogleSignIn}
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
             >
               Sign in with Google
             </Button>
@@ -241,7 +254,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               />
             </div>
             <div className="space-y-2">
@@ -251,13 +264,13 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleSignUp}
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
             >
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
@@ -275,7 +288,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
               variant="outline"
               className="w-full"
               onClick={handleGoogleSignIn}
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
             >
               Sign up with Google
             </Button>
