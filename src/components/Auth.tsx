@@ -1,17 +1,25 @@
-
 import { useState, useEffect } from "react";
+import { FirebaseError } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
-  User
+  User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
@@ -28,6 +36,27 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Handle redirect result
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          toast({
+            title: "Signed in with Google",
+            description: "You have successfully signed in with Google",
+          });
+        }
+      })
+      .catch((error) => {
+        if (error.code !== "auth/redirect-cancelled-by-user") {
+          toast({
+            title: "Google sign in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      });
+
+    // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (onAuthStateChange) {
@@ -36,7 +65,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
     });
 
     return () => unsubscribe();
-  }, [onAuthStateChange]);
+  }, [onAuthStateChange, toast]);
 
   const handleSignUp = async () => {
     setIsLoading(true);
@@ -46,10 +75,14 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
         title: "Account created",
         description: "Your account has been created successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : "An unknown error occurred";
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -65,10 +98,14 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
         title: "Signed in",
         description: "You have successfully signed in",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : "An unknown error occurred";
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -79,19 +116,19 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      toast({
-        title: "Signed in with Google",
-        description: "You have successfully signed in with Google",
-      });
-    } catch (error: any) {
+      await signInWithRedirect(auth, googleProvider);
+      // No need for success toast here as it will be handled in the redirect result
+    } catch (error) {
+      setIsLoading(false);
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : "An unknown error occurred";
       toast({
         title: "Google sign in failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -102,10 +139,14 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
         title: "Signed out",
         description: "You have been signed out successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : "An unknown error occurred";
       toast({
         title: "Sign out failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -121,11 +162,7 @@ export const Auth = ({ onAuthStateChange }: AuthProps) => {
           </CardDescription>
         </CardHeader>
         <CardFooter>
-          <Button
-            onClick={handleSignOut}
-            className="w-full"
-            variant="outline"
-          >
+          <Button onClick={handleSignOut} className="w-full" variant="outline">
             Sign Out
           </Button>
         </CardFooter>
