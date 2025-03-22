@@ -10,7 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { QuranNote, QuranVerse } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
-import { Eye, ExternalLink, Trash2, Pencil } from "lucide-react";
+import { Eye, ExternalLink, Trash2, Pencil, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -58,11 +64,13 @@ export const Note = ({
         title: "Note Deleted",
         description: "The note has been deleted successfully",
       });
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error deleting note:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Failed to delete note",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -77,11 +85,13 @@ export const Note = ({
       const verse = await fetchQuranVerse(note.surah, note.verse);
       setVerseData(verse);
       setIsVerseDialogOpen(true);
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error fetching verse:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Failed to fetch verse",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -140,21 +150,7 @@ export const Note = ({
         <CardContent>
           <p className="text-base whitespace-pre-wrap">{note.text}</p>
         </CardContent>
-        <CardFooter className="flex justify-between pt-2 flex-wrap gap-1">
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs gap-1"
-              onClick={handleViewVerse}
-              disabled={isLoading}
-            >
-              <Eye className="h-3 w-3" />
-              View Verse
-            </Button>
-            <NoteShare note={note} />
-            <NoteMoveToAnotherPass note={note} userId={userId} />
-          </div>
+        <CardFooter className="flex justify-end pt-2 flex-wrap gap-1">
           <div className="flex gap-1">
             <Button
               variant="ghost"
@@ -176,6 +172,39 @@ export const Note = ({
               <Trash2 className="h-3 w-3" />
               Delete
             </Button>
+            <div className="flex gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs gap-1"
+                      onClick={handleViewVerse}
+                      disabled={isLoading}
+                    >
+                      <Eye className="h-3 w-3" />
+                      View Verse
+                    </Button>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <div>
+                      <NoteShare note={note} />
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <div>
+                      <NoteMoveToAnotherPass note={note} userId={userId} />
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardFooter>
       </Card>

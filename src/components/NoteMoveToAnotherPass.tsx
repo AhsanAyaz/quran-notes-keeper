@@ -113,7 +113,7 @@ export const NoteMoveToAnotherPass = ({
         onClick={() => setIsDialogOpen(true)}
       >
         <Move className="h-3 w-3" />
-        Move to another pass
+        Move Note
       </Button>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -124,7 +124,7 @@ export const NoteShare = ({ note }: NoteShareProps) => {
         onClick={handleShareClick}
       >
         <Share2 className="h-3 w-3" />
-        Share
+        Share Note
       </Button>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
