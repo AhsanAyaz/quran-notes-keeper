@@ -25,13 +25,16 @@ import { db } from "@/lib/firebase";
 interface NoteMoveToAnotherPassProps {
   note: QuranNote;
   userId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export const NoteMoveToAnotherPass = ({
   note,
   userId,
+  open,
+  onOpenChange,
 }: NoteMoveToAnotherPassProps) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isMoving, setIsMoving] = useState(false);
   const { toast } = useToast();
@@ -62,9 +65,11 @@ export const NoteMoveToAnotherPass = ({
       },
       (error) => {
         console.error("Error fetching projects:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "An unknown error occurred";
         toast({
           title: "Failed to load projects",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
         setIsLoading(false);
@@ -91,12 +96,14 @@ export const NoteMoveToAnotherPass = ({
         variant: "default",
       });
 
-      setIsDialogOpen(false);
-    } catch (error) {
+      onOpenChange(false);
+    } catch (error: Error | unknown) {
       console.error("Error moving note:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Error moving note",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -105,71 +112,59 @@ export const NoteMoveToAnotherPass = ({
   };
 
   return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-xs gap-1"
-        onClick={() => setIsDialogOpen(true)}
-      >
-        <Move className="h-3 w-3" />
-        Move Note
-      </Button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="glass-card animate-fade-in max-h-[90vh] overflow-auto">
+        <DialogHeader>
+          <DialogTitle>Move Your Note</DialogTitle>
+          <DialogDescription className="flex justify-between items-center gap-4">
+            <span className="h-fit">
+              Move this note to one of your other passes
+            </span>
+          </DialogDescription>
+        </DialogHeader>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="glass-card animate-fade-in max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Move Your Note</DialogTitle>
-            <DialogDescription className="flex justify-between items-center gap-4">
-              <span className="h-fit">
-                Move this note to one of your other passes
-              </span>
-            </DialogDescription>
-          </DialogHeader>
+        <div className="flex flex-col items-center justify-center py-2 relative">
+          {isLoading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+              <p>Loading passes...</p>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              No other passes found
+            </div>
+          ) : (
+            <div className="w-full space-y-2">
+              {projects.map((project) => (
+                <Button
+                  key={project.id}
+                  variant="outline"
+                  className="w-full text-left flex justify-between items-center"
+                  onClick={() => handleMoveToProject(project.id)}
+                  disabled={project.id === note.projectId || isMoving}
+                >
+                  <span>{project.name}</span>
+                  {project.id === note.projectId && (
+                    <span className="text-sm text-muted-foreground">
+                      (Current)
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <div className="flex flex-col items-center justify-center py-2 relative">
-            {isLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p>Loading passes...</p>
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No other passes found
-              </div>
-            ) : (
-              <div className="w-full space-y-2">
-                {projects.map((project) => (
-                  <Button
-                    key={project.id}
-                    variant="outline"
-                    className="w-full text-left flex justify-between items-center"
-                    onClick={() => handleMoveToProject(project.id)}
-                    disabled={project.id === note.projectId || isMoving}
-                  >
-                    <span>{project.name}</span>
-                    {project.id === note.projectId && (
-                      <span className="text-sm text-muted-foreground">
-                        (Current)
-                      </span>
-                    )}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isMoving}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isMoving}
+          >
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

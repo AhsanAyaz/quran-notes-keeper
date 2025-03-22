@@ -10,7 +10,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { QuranNote, QuranVerse } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
-import { Eye, ExternalLink, Trash2, Pencil, MoreVertical } from "lucide-react";
+import {
+  Eye,
+  ExternalLink,
+  Trash2,
+  Pencil,
+  MoreVertical,
+  ArrowRight,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +60,8 @@ export const Note = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verseData, setVerseData] = useState<QuranVerse | null>(null);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleDelete = async () => {
@@ -133,7 +142,10 @@ export const Note = ({
 
   return (
     <>
-      <Card className="glass-card animate-fade-in hover:shadow-md transition-all">
+      <Card
+        className="glass-card animate-fade-in hover:shadow-md transition-all cursor-pointer"
+        onClick={handleViewVerse}
+      >
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
@@ -156,51 +168,71 @@ export const Note = ({
               variant="ghost"
               size="sm"
               className="text-xs gap-1"
-              onClick={handleEdit}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewVerse();
+              }}
+              disabled={isLoading}
+            >
+              <Eye className="h-3 w-3" />
+              View Verse
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs gap-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit();
+              }}
               disabled={isLoading}
             >
               <Pencil className="h-3 w-3" />
               Edit
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-destructive gap-1"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              disabled={isLoading}
-            >
-              <Trash2 className="h-3 w-3" />
-              Delete
-            </Button>
             <div className="flex gap-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs gap-1"
-                      onClick={handleViewVerse}
-                      disabled={isLoading}
-                    >
-                      <Eye className="h-3 w-3" />
-                      View Verse
-                    </Button>
+                <DropdownMenuContent
+                  align="end"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Delete
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <div>
-                      <NoteShare note={note} />
-                    </div>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsShareDialogOpen(true);
+                    }}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-2" />
+                    Share Note
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <div>
-                      <NoteMoveToAnotherPass note={note} userId={userId} />
-                    </div>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsMoveDialogOpen(true);
+                    }}
+                  >
+                    <ArrowRight className="h-3 w-3 mr-2" />
+                    Move to Another Pass
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -288,6 +320,39 @@ export const Note = ({
             </Button>
             <Button onClick={() => toggleVerseDialog(false)}>Close</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="glass-card animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Share Note</DialogTitle>
+            <DialogDescription>Share this note with others</DialogDescription>
+          </DialogHeader>
+          <NoteShare
+            note={note}
+            open={isShareDialogOpen}
+            onOpenChange={setIsShareDialogOpen}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Dialog */}
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent className="glass-card animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Move Note</DialogTitle>
+            <DialogDescription>
+              Move this note to another pass
+            </DialogDescription>
+          </DialogHeader>
+          <NoteMoveToAnotherPass
+            note={note}
+            userId={userId}
+            open={isMoveDialogOpen}
+            onOpenChange={setIsMoveDialogOpen}
+          />
         </DialogContent>
       </Dialog>
     </>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { QuranNote, QuranVerse } from "@/lib/types";
@@ -24,20 +24,28 @@ import {
 
 interface NoteShareProps {
   note: QuranNote;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const NoteShare = ({ note }: NoteShareProps) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export const NoteShare = ({ note, open, onOpenChange }: NoteShareProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [shareImage, setShareImage] = useState<string | null>(null);
   const [verseData, setVerseData] = useState<QuranVerse | null>(null);
   const { toast } = useToast();
   const enableSocials = import.meta.env.VITE_ENABLE_SOCIALS;
 
-  const handleShareClick = async () => {
-    setIsDialogOpen(true);
-    setIsLoading(true);
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      fetchShareData();
+    } else {
+      setShareImage(null);
+      setVerseData(null);
+    }
+  }, [open]);
 
+  const fetchShareData = async () => {
     try {
       // Fetch the verse data
       const verse = await fetchQuranVerse(note.surah, note.verse);
@@ -46,11 +54,13 @@ export const NoteShare = ({ note }: NoteShareProps) => {
       // Generate the shareable image
       const imageUrl = await createShareableImage(note, verse);
       setShareImage(imageUrl);
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error preparing share:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Error preparing share",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -89,11 +99,13 @@ export const NoteShare = ({ note }: NoteShareProps) => {
           description: `A new window has opened to share to ${platform}.`,
         });
       }
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error(`Error sharing to ${platform}:`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: `Error Sharing to ${platform}`,
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -117,17 +129,7 @@ export const NoteShare = ({ note }: NoteShareProps) => {
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-xs gap-1"
-        onClick={handleShareClick}
-      >
-        <Share2 className="h-3 w-3" />
-        Share Note
-      </Button>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="glass-card animate-fade-in max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Share Your Note</DialogTitle>
@@ -210,7 +212,7 @@ export const NoteShare = ({ note }: NoteShareProps) => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
           </DialogFooter>
