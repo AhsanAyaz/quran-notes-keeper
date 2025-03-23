@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -60,6 +60,24 @@ export const NoteForm = ({
   const [shouldShowPlaceholder, setShouldShowPlaceholder] = useState(true);
   const { toast } = useToast();
   const isEditMode = Boolean(noteToEdit);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle initial scroll position
+  useEffect(() => {
+    // Add slight delay to ensure dialog is fully rendered
+    const timeoutId = setTimeout(() => {
+      if (textareaRef.current) {
+        const yOffset = -100; // Adjust this value to control scroll position
+        const y =
+          textareaRef.current.getBoundingClientRect().top +
+          window.pageYOffset +
+          yOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   useEffect(() => {
     if (noteToEdit) {
@@ -234,14 +252,14 @@ export const NoteForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Card className="glass-card animate-fade-in">
-        <CardHeader>
+    <form onSubmit={handleSubmit} className="h-full">
+      <Card className="glass-card animate-fade-in border-0 rounded-none sm:border sm:rounded-lg">
+        <CardHeader className="px-4 py-3 sm:p-6">
           <CardTitle>{isEditMode ? "Edit Note" : "New Note"}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 px-4 sm:px-6">
           {(isLoadingVerse || versePreview || shouldShowPlaceholder) && (
-            <div className="rounded-lg p-4 bg-primary/10 space-y-2 h-72 overflow-y-auto">
+            <div className="rounded-lg p-3 bg-primary/10 space-y-2 h-48 sm:h-72 overflow-y-auto">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Book className="h-4 w-4" />
                 <span>
@@ -285,7 +303,7 @@ export const NoteForm = ({
             />
           )} */}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="note">Your Note</Label>
             <Textarea
               id="note"
@@ -296,12 +314,14 @@ export const NoteForm = ({
               }...`}
               value={transcription}
               onChange={(e) => setTranscription(e.target.value)}
-              className="min-h-[100px] resize-y"
+              ref={textareaRef}
+              className="min-h-[120px] resize-none sm:resize-y"
               disabled={isSubmitting}
+              autoFocus={false}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="surah">Surah (Chapter)</Label>
               <Input
@@ -337,7 +357,7 @@ export const NoteForm = ({
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex gap-2">
+        <CardFooter className="flex gap-2 px-4 py-3 sm:p-6 mt-auto">
           {isEditMode && (
             <Button
               type="button"

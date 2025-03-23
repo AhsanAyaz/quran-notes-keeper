@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   doc,
@@ -20,7 +21,7 @@ import {
   Trash,
   Pencil,
   FileText,
-  Download,
+  Plus,
 } from "lucide-react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
@@ -54,8 +55,10 @@ const ProjectView = () => {
   const [selectedNote, setSelectedNote] = useState<QuranNote | null>(null);
   const [projectNotes, setProjectNotes] = useState<QuranNote[]>([]);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -98,11 +101,14 @@ const ProjectView = () => {
           });
           navigate("/dashboard");
         }
-      } catch (error: any) {
+      } catch (error: Error | unknown) {
         console.error("Error fetching project:", error);
         toast({
           title: "Error",
-          description: error.message,
+          description:
+            error instanceof Error
+              ? error.message
+              : "An unknown error occurred",
           variant: "destructive",
         });
       } finally {
@@ -145,11 +151,12 @@ const ProjectView = () => {
       });
 
       navigate("/dashboard");
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error deleting project:", error);
       toast({
         title: "Failed to delete reading pass",
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -184,11 +191,12 @@ const ProjectView = () => {
 
       setRefreshTrigger((prev) => prev + 1);
       setIsEditDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error updating project:", error);
       toast({
         title: "Failed to update reading pass",
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -221,11 +229,12 @@ const ProjectView = () => {
         title: "PDF Exported",
         description: "Your notes have been exported to PDF",
       });
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error exporting PDF:", error);
       toast({
         title: "Export Failed",
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -318,20 +327,22 @@ const ProjectView = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <h2 className="text-xl font-bold mb-4">Add New Note</h2>
-              <NoteForm
-                projectId={project.id}
-                userId={currentUser.uid}
-                onNoteAdded={handleNoteAdded}
-                noteToEdit={selectedNote}
-                onCancelEdit={() => setSelectedNote(null)}
-              />
+          {!isMobile && (
+            <div className="lg:col-span-1">
+              <div className="sticky top-8">
+                <h2 className="text-xl font-bold mb-4">Add New Note</h2>
+                <NoteForm
+                  projectId={project.id}
+                  userId={currentUser.uid}
+                  onNoteAdded={handleNoteAdded}
+                  noteToEdit={selectedNote}
+                  onCancelEdit={() => setSelectedNote(null)}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="lg:col-span-2">
+          <div className={isMobile ? "col-span-1" : "lg:col-span-2"}>
             <h2 className="text-xl font-bold mb-4">Project Notes</h2>
             <Separator className="mb-6" />
             <NoteList
@@ -420,6 +431,42 @@ const ProjectView = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Note Form Dialog for Mobile */}
+      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <DialogContent className="glass-card animate-fade-in max-h-[100dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Note</DialogTitle>
+            <DialogDescription>
+              Add a new note to your reading pass
+            </DialogDescription>
+          </DialogHeader>
+          <NoteForm
+            projectId={project.id}
+            userId={currentUser.uid}
+            onNoteAdded={() => {
+              handleNoteAdded();
+              setIsFormDialogOpen(false);
+            }}
+            noteToEdit={selectedNote}
+            onCancelEdit={() => {
+              setSelectedNote(null);
+              setIsFormDialogOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating Action Button for Mobile */}
+      {isMobile && (
+        <Button
+          className="fixed bottom-4 right-4 rounded-full w-14 h-14 aspect-square p-0 shadow-lg"
+          size="lg"
+          onClick={() => setIsFormDialogOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      )}
     </div>
   );
 };

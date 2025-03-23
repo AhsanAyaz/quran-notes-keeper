@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Card,
   CardContent,
@@ -62,7 +63,9 @@ export const Note = ({
   const [verseData, setVerseData] = useState<QuranVerse | null>(null);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -116,7 +119,11 @@ export const Note = ({
   };
 
   const handleEdit = () => {
-    setIsEditMode(true);
+    if (isMobile) {
+      setIsEditDialogOpen(true);
+    } else {
+      setIsEditMode(true);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -128,7 +135,7 @@ export const Note = ({
     if (onUpdate) onUpdate();
   };
 
-  if (isEditMode) {
+  if (isEditMode && !isMobile) {
     return (
       <NoteForm
         projectId={projectId}
@@ -353,6 +360,33 @@ export const Note = ({
             open={isMoveDialogOpen}
             onOpenChange={setIsMoveDialogOpen}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog for Mobile */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="glass-card animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+            <DialogDescription>
+              Edit your note for Surah {note.surah}:{note.verse}
+            </DialogDescription>
+          </DialogHeader>
+          {isEditDialogOpen && (
+            <NoteForm
+              projectId={projectId}
+              userId={userId}
+              noteToEdit={{ ...note }}
+              onNoteAdded={() => {
+                handleNoteUpdated();
+                setIsEditDialogOpen(false);
+              }}
+              onCancelEdit={() => {
+                handleCancelEdit();
+                setIsEditDialogOpen(false);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>
