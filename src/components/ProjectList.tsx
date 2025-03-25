@@ -184,24 +184,26 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
           {projects.map((project) => (
             <Card
               key={project.id}
-              className="cursor-pointer hover:ring-1 hover:ring-primary/20 transition-all glass-card animate-fade-in"
+              className="cursor-pointer hover:ring-1 hover:ring-primary/20 transition-all glass-card animate-fade-in dark:bg-background"
               onClick={() => handleProjectClick(project.id)}
             >
               <CardHeader
                 className={`${project.color || "bg-sand-300"} rounded-t-lg`}
               >
                 <div className="flex justify-between items-start">
-                  <CardTitle className="truncate h-8">{project.name}</CardTitle>
+                  <CardTitle className="truncate h-8 text-white dark:text-gray-900">
+                    {project.name}
+                  </CardTitle>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30"
+                    className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 dark:bg-gray-800 dark:hover:bg-gray-700"
                     onClick={(e) => handleDeleteClick(e, project)}
                   >
-                    <Trash className="h-4 w-4 text-foreground" />
+                    <Trash className="h-4 w-4 text-foreground dark:text-white" />
                   </Button>
                 </div>
-                <CardDescription className="text-foreground truncate">
+                <CardDescription className="text-white dark:text-gray-700 truncate">
                   {project.description || "No description"}
                 </CardDescription>
               </CardHeader>
@@ -241,7 +243,7 @@ export const ProjectList = ({ userId }: ProjectListProps) => {
         open={!!projectToDelete}
         onOpenChange={(open) => !open && setProjectToDelete(null)}
       >
-        <DialogContent className="glass-card animate-fade-in">
+        <DialogContent className="glass-card animate-fade-in dark:bg-background">
           <DialogHeader>
             <DialogTitle>Delete Reading Pass</DialogTitle>
             <DialogDescription>
