@@ -279,7 +279,7 @@ export const Note = ({
 
       {/* Verse View Dialog */}
       <Dialog open={isVerseDialogOpen} onOpenChange={toggleVerseDialog}>
-        <DialogContent className="glass-card animate-fade-in max-h-[100vh] overflow-auto">
+        <DialogContent className="glass-card animate-fade-in max-h-[100vh] overflow-auto dark:bg-background">
           <DialogHeader>
             <DialogTitle>
               Surah {note.surah}, Verse {note.verse}

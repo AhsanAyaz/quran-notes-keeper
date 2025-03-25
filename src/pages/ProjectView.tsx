@@ -401,7 +401,7 @@ const ProjectView = () => {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="glass-card animate-fade-in">
+        <DialogContent className="glass-card animate-fade-in dark:bg-background">
           <DialogHeader>
             <DialogTitle>Edit Reading Pass</DialogTitle>
             <DialogDescription>
