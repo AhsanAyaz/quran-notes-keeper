@@ -7,14 +7,16 @@ import NoteList from "@/components/NoteList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { LogOut, BookOpen, StickyNote } from "lucide-react";
+import { LogOut, BookOpen, StickyNote, Sun, Moon } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeProvider";
 
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   // Check authentication
   useEffect(() => {
@@ -68,6 +70,14 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
+
+              <Button onClick={toggleTheme} variant="ghost">
+                {theme === "dark" ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
 
               <Button variant="ghost" size="icon" onClick={handleSignOut}>
                 <LogOut className="h-5 w-5" />
