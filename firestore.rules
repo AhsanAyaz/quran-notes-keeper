@@ -2,22 +2,66 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Rules for the 'users' collection
-    match /users/{userId} {
-      // Allow reading own document OR potentially allow any authenticated user to read any profile
-      // Option 1: Only read own document (like original read rule)
-      // allow read: if request.auth != null && request.auth.uid == userId;
-      // Option 2: Allow any authenticated user to read any profile (adjust if needed)
-      allow read: if request.auth != null;
 
-      // Allow user to create, update, or delete ONLY their own document
-      // Combine create, update, delete under one condition for clarity
+    //============================================================
+    // Rules for the 'users' collection
+    // Document ID *is* the user's UID
+    //============================================================
+    match /users/{userId} {
+      // Option 1: Allow any authenticated user to read any profile (Common for public profiles)
+      allow read: if request.auth != null;
+      // Option 2: Only allow a user to read their own profile document (Stricter privacy)
+      // allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow a user to create, update, or delete ONLY their own document.
+      // 'write' covers create, update, delete.
       allow write: if request.auth != null && request.auth.uid == userId;
-      // Note: 'write' is shorthand for 'create', 'update', 'delete'.
-      // If you need separate logic (e.g., different conditions for create vs update),
-      // keep them separate like this:
-      // allow create: if request.auth != null && request.auth.uid == userId;
-      // allow update, delete: if request.auth != null && request.auth.uid == userId;
     }
+
+    //============================================================
+    // Rules for the 'projects' collection
+    // Documents have a 'userId' field indicating the owner
+    //============================================================
+    match /projects/{projectId} {
+      // Allow read ONLY if the requesting user is authenticated AND their UID matches the 'userId' field in the project document.
+      // Assumes projects are private to their owner.
+      // To make projects readable by anyone authenticated: allow read: if request.auth != null;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow create ONLY if the user is authenticated AND the 'userId' field in the NEW document matches their UID.
+      // This prevents a user from creating a project assigned to someone else.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Allow update ONLY if the user is authenticated AND they are the owner of the EXISTING document.
+      // Optional addition: You might also prevent changing the 'userId' field during update:
+      // allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow delete ONLY if the user is authenticated AND they are the owner of the document being deleted.
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    //============================================================
+    // Rules for the 'notes' collection
+    // Documents have a 'userId' field indicating the owner
+    //============================================================
+    match /notes/{noteId} {
+      // Allow read ONLY if the requesting user is authenticated AND their UID matches the 'userId' field in the note document.
+      // Assumes notes are private to their owner.
+      // To make notes readable by anyone authenticated: allow read: if request.auth != null;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow create ONLY if the user is authenticated AND the 'userId' field in the NEW document matches their UID.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Allow update ONLY if the user is authenticated AND they are the owner of the EXISTING document.
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow delete ONLY if the user is authenticated AND they are the owner of the document being deleted.
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Add rules for any other collections here...
+
   }
 }
