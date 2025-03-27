@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Allow reading own document OR potentially allow any authenticated user to read any profile
+      // Option 1: Only read own document (like original read rule)
+      // allow read: if request.auth != null && request.auth.uid == userId;
+      // Option 2: Allow any authenticated user to read any profile (adjust if needed)
+      allow read: if request.auth != null;
+
+      // Allow user to create, update, or delete ONLY their own document
+      // Combine create, update, delete under one condition for clarity
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // Note: 'write' is shorthand for 'create', 'update', 'delete'.
+      // If you need separate logic (e.g., different conditions for create vs update),
+      // keep them separate like this:
+      // allow create: if request.auth != null && request.auth.uid == userId;
+      // allow update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
