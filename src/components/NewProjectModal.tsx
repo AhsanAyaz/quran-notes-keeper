@@ -97,7 +97,7 @@ export const NewProjectModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] glass-card animate-fade-in">
+      <DialogContent className="sm:max-w-[425px] glass-card animate-fade-in dark:bg-background">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Reading Pass</DialogTitle>

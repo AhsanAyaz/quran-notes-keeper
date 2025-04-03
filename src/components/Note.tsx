@@ -150,7 +150,7 @@ export const Note = ({
   return (
     <>
       <Card
-        className="glass-card animate-fade-in hover:shadow-md transition-all cursor-pointer"
+        className="glass-card animate-fade-in hover:shadow-md transition-all cursor-pointer dark:bg-background"
         onClick={handleViewVerse}
       >
         <CardHeader className="pb-2">
@@ -250,7 +250,7 @@ export const Note = ({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="glass-card animate-fade-in">
+        <DialogContent className="glass-card animate-fade-in dark:bg-background">
           <DialogHeader>
             <DialogTitle>Delete Note</DialogTitle>
             <DialogDescription>
@@ -279,7 +279,7 @@ export const Note = ({
 
       {/* Verse View Dialog */}
       <Dialog open={isVerseDialogOpen} onOpenChange={toggleVerseDialog}>
-        <DialogContent className="glass-card animate-fade-in max-h-[100vh] overflow-auto">
+        <DialogContent className="glass-card animate-fade-in max-h-[100vh] overflow-auto dark:bg-background">
           <DialogHeader>
             <DialogTitle>
               Surah {note.surah}, Verse {note.verse}

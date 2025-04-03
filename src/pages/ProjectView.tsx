@@ -22,6 +22,8 @@ import {
   Pencil,
   FileText,
   Plus,
+  Sun,
+  Moon,
 } from "lucide-react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
@@ -39,6 +41,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useTheme } from "@/context/ThemeProvider";
 
 const ProjectView = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -59,6 +62,7 @@ const ProjectView = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -263,35 +267,47 @@ const ProjectView = () => {
       <header className={`py-4 ${project.color || "bg-primary/20"}`}>
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-            <div className="flex gap-2 justify-between items-center w-full">
+            <div className="flex justify-between items-center w-full">
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-white/80"
+                className="bg-white/80 dark:bg-background"
                 onClick={() => navigate("/dashboard")}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Dashboard
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-white/80"
-                onClick={handleExportPDF}
-                disabled={isExportingPDF}
-              >
-                {isExportingPDF ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-1" />
-                    Export PDF
-                  </>
-                )}
-              </Button>
+
+              {/* Right-aligned buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/80 dark:bg-background"
+                  onClick={handleExportPDF}
+                  disabled={isExportingPDF}
+                >
+                  {isExportingPDF ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-1" />
+                      Export PDF
+                    </>
+                  )}
+                </Button>
+
+                {/* <Button onClick={toggleTheme} variant="ghost">
+                  {theme === "dark" ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  )}
+                </Button> */}
+              </div>
             </div>
           </div>
           <h1 className="text-3xl font-serif font-bold text-primary-foreground">
@@ -307,7 +323,7 @@ const ProjectView = () => {
           <Button
             variant="outline"
             size="sm"
-            className="bg-white/80"
+            className="bg-white/80 dark:bg-background"
             onClick={() => setIsEditDialogOpen(true)}
           >
             <Pencil className="h-4 w-4 mr-1" />
@@ -385,7 +401,7 @@ const ProjectView = () => {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="glass-card animate-fade-in">
+        <DialogContent className="glass-card animate-fade-in dark:bg-background">
           <DialogHeader>
             <DialogTitle>Edit Reading Pass</DialogTitle>
             <DialogDescription>
