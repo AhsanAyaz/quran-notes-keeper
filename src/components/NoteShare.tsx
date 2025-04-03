@@ -21,6 +21,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
+import { useTranslationStore } from "@/lib/stores/translationStore";
 
 interface NoteShareProps {
   note: QuranNote;
@@ -34,6 +35,7 @@ export const NoteShare = ({ note, open, onOpenChange }: NoteShareProps) => {
   const [verseData, setVerseData] = useState<QuranVerse | null>(null);
   const { toast } = useToast();
   const enableSocials = import.meta.env.VITE_ENABLE_SOCIALS;
+  const translationStore = useTranslationStore();
 
   useEffect(() => {
     if (open) {
@@ -48,7 +50,11 @@ export const NoteShare = ({ note, open, onOpenChange }: NoteShareProps) => {
   const fetchShareData = async () => {
     try {
       // Fetch the verse data
-      const verse = await fetchQuranVerse(note.surah, note.verse);
+      const verse = await fetchQuranVerse(
+        note.surah,
+        note.verse,
+        translationStore.translation
+      );
       setVerseData(verse);
 
       // Generate the shareable image

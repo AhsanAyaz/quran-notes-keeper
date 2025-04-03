@@ -5,7 +5,8 @@ const API_BASE_URL = "https://api.alquran.cloud/v1";
 // Fetch a specific verse from the Quran
 export const fetchQuranVerse = async (
   surahNumber: number,
-  verseNumber: number
+  verseNumber: number,
+  translation: string = "en.daryabadi" // Default fallback
 ): Promise<QuranVerse> => {
   try {
     // Get the Arabic text
@@ -19,7 +20,7 @@ export const fetchQuranVerse = async (
 
     // Get the English translation
     const translationResponse = await fetch(
-      `${API_BASE_URL}/ayah/${surahNumber}:${verseNumber}/en.maududi`
+      `${API_BASE_URL}/ayah/${surahNumber}:${verseNumber}/${translation}`
     );
     if (!translationResponse.ok) {
       throw new Error(

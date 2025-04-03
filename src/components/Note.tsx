@@ -40,6 +40,7 @@ import { fetchQuranVerse } from "@/lib/quranApi";
 import NoteForm from "./NoteForm";
 import NoteShare from "./NoteShare";
 import { NoteMoveToAnotherPass } from "./NoteMoveToAnotherPass";
+import { useTranslationStore } from "@/lib/stores/translationStore";
 
 interface NoteProps {
   note: QuranNote;
@@ -66,6 +67,7 @@ export const Note = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const translationStore = useTranslationStore();
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -94,7 +96,11 @@ export const Note = ({
   const handleViewVerse = async () => {
     setIsLoading(true);
     try {
-      const verse = await fetchQuranVerse(note.surah, note.verse);
+      const verse = await fetchQuranVerse(
+        note.surah,
+        note.verse,
+        translationStore.translation
+      );
       setVerseData(verse);
       setIsVerseDialogOpen(true);
     } catch (error: Error | unknown) {

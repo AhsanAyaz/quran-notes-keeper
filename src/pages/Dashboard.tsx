@@ -4,6 +4,7 @@ import { User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import ProjectList from "@/components/ProjectList";
 import NoteList from "@/components/NoteList";
+import TranslationSelector from "@/components/TranslationSelector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-center gap-4">
+              <TranslationSelector />
               <div className="flex items-center gap-2">
                 <Avatar>
                   <AvatarImage src={currentUser.photoURL || undefined} />

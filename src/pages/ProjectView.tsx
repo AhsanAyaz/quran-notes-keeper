@@ -15,6 +15,7 @@ import { db, auth } from "@/lib/firebase";
 import { Project, QuranNote } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import TranslationSelector from "@/components/TranslationSelector";
 import {
   ArrowLeft,
   Loader2,
@@ -303,25 +304,28 @@ const ProjectView = () => {
             </p>
           )}
         </div>
-        <div className="px-4 flex gap-2 justify-end items-center w-ful my-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-white/80"
-            onClick={() => setIsEditDialogOpen(true)}
-          >
-            <Pencil className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
+        <div className="px-4 flex gap-2 justify-between items-center w-full my-2">
+          <TranslationSelector />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white/80"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              <Pencil className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white/80 text-destructive hover:bg-destructive hover:text-white"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+          </div>
         </div>
       </header>
 

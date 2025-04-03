@@ -24,6 +24,7 @@ import { db } from "@/lib/firebase";
 import { extractSurahVerse, getMaxVerseNumber } from "@/lib/utils";
 import { QuranNote } from "@/lib/types";
 import { fetchQuranVerse } from "@/lib/quranApi";
+import { useTranslationStore } from "@/lib/stores/translationStore";
 import { Loader2, Book } from "lucide-react";
 import { SURAHS_LIST } from "@/lib/surahs-list";
 
@@ -61,6 +62,7 @@ export const NoteForm = ({
   const { toast } = useToast();
   const isEditMode = Boolean(noteToEdit);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { translation } = useTranslationStore();
 
   // Handle initial scroll position
   useEffect(() => {
@@ -115,7 +117,7 @@ export const NoteForm = ({
     }
 
     return () => clearTimeout(timeoutId);
-  }, [surah, verse]);
+  }, [surah, verse, translation]);
 
   const fetchVersePreview = async (surahNum: number, verseNum: number) => {
     if (
@@ -130,7 +132,7 @@ export const NoteForm = ({
 
     setIsLoadingVerse(true);
     try {
-      const verseData = await fetchQuranVerse(surahNum, verseNum);
+      const verseData = await fetchQuranVerse(surahNum, verseNum, translation);
       setVersePreview({
         arabic: verseData.text,
         translation: verseData.translation,
